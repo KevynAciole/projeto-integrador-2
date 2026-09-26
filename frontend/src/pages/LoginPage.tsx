@@ -1,0 +1,19 @@
+import { useState } from 'react'
+import { ArrowUpRight, House, ShieldCheck } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { API_URL } from '../api'
+import type { Role } from '../auth/auth-context'
+import { useAuth } from '../auth/useAuth'
+
+export function LoginPage() {
+  const { enterDemo } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [role, setRole] = useState<Role>('gestor')
+  const from = (location.state as { from?: string } | null)?.from
+  const error = new URLSearchParams(location.search).get('erro')
+
+  return <main className="login-page"><section className="login-story"><div className="login-topline"><span className="brand-mark"><House size={19} /></span><span className="login-brand">mercado<span>.</span><small>do pátio</small></span><span className="login-edition">CONDOMÍNIO PÁTIO DAS FLORES</span></div><div className="login-hero"><span className="eyebrow"><i /> UM BOM DIA COMEÇA PERTO</span><h1>O seu mercado,<br /><em>do lado de casa.</em></h1><p>Compras simples, estoque organizado e tudo em harmonia com a vida do condomínio.</p><div className="login-illustration" aria-hidden="true"><div className="sun-disc" /><div className="shop-building"><div className="awning"><i /><i /><i /><i /><i /><i /><i /></div><div className="shop-window"><span /><span /><span /></div><div className="shop-door" /></div><div className="plant plant-one"><i /><i /><i /><b /></div><div className="plant plant-two"><i /><i /><i /><b /></div><div className="ground-line" /></div></div><div className="login-footnote"><span><ShieldCheck size={16} />Acesso exclusivo para moradores</span><span>01 — 03</span></div></section><section className="login-panel"><div className="login-panel-content"><span className="login-kicker">BEM-VINDO AO MERCADO DO PÁTIO</span><h2>Entre para continuar</h2><p>Use sua conta Google cadastrada no condomínio.</p>{error && <div className="login-error" role="alert">{error === 'nao-cadastrado' ? 'Conta sem cadastro. Peça acesso à administração.' : 'Não foi possível concluir o login. Tente novamente.'}</div>}<a className="google-button" href={`${API_URL}/auth/google`}><GoogleMark />Continuar com Google<ArrowUpRight size={16} /></a><div className="login-separator"><span />ou<span /></div><div className="demo-entry"><div className="demo-title"><span className="demo-icon">✳</span><span><strong>Conhecer o sistema</strong><small>Explore com dados de demonstração</small></span></div><label htmlFor="demo-role">Perfil de acesso</label><div className="select-wrap"><select id="demo-role" value={role} onChange={(event) => setRole(event.target.value as Role)}><option value="gestor">Gestor do estoque</option><option value="sindico">Síndico</option><option value="condomino">Condômino</option></select></div><button className="button button-dark demo-button" onClick={() => { enterDemo(role); navigate(role === 'condomino' ? '/minhas-compras' : from ?? '/') }}>Entrar na demonstração<ArrowUpRight size={16} /></button></div><p className="privacy-note"><ShieldCheck size={14} />Seus dados são vinculados ao seu condomínio.</p></div><div className="login-panel-bottom"><span>Precisa de acesso? <a href="mailto:administracao@patiodasflores.com.br">Fale com a administração</a></span><span>© 2026 Mercado do Pátio</span></div></section></main>
+}
+
+function GoogleMark() { return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.9 6.1-15Z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2A20 20 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6l6.8-5.2Z"/><path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12Z"/></svg> }

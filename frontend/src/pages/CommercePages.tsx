@@ -1,0 +1,123 @@
+import { useEffect, useState } from 'react'
+import { ArrowUpRight, Download, House, PackagePlus, Pencil, Plus, ShoppingBag, UsersRound, X } from 'lucide-react'
+import { Link, useOutletContext } from 'react-router-dom'
+import { api, money, type Product, type Purchase } from '../api'
+import { useAuth } from '../auth/useAuth'
+
+type ShellContext = { notify: (message: string) => void }
+type Unit = { id: string; numero: string; bloco?: string | null; moradores: { id?: string; nome: string }[] }
+type Resident = { id: string; nome: string; email: string; perfil: string; unidadeId?: string | null; unidade?: { numero: string; bloco?: string | null } | null }
+const demoProducts: Product[] = [{ id: '1', nome: 'Leite integral 1L', categoria: 'Laticínios', quantidade: 24, preco: 5.49 }, { id: '2', nome: 'Café moído 500g', categoria: 'Mercearia', quantidade: 18, preco: 18.5 }, { id: '3', nome: 'Ovos caipiras · 12 un.', categoria: 'Mercearia', quantidade: 7, preco: 12.9 }]
+const demoUnits: Unit[] = [{ id: 'a', numero: '302', bloco: 'A', moradores: [{ nome: 'Camila Rocha' }, { nome: 'Pedro Rocha' }] }, { id: 'b', numero: '105', bloco: 'A', moradores: [{ nome: 'Lucas Pereira' }] }, { id: 'c', numero: '804', bloco: 'B', moradores: [{ nome: 'Ana Souza' }, { nome: 'Caio Souza' }] }]
+const demoResidents: Resident[] = [{ id: '1', nome: 'Camila Rocha', email: 'camila@email.com', perfil: 'condomino', unidadeId: 'a', unidade: { numero: '302', bloco: 'A' } }, { id: '2', nome: 'Lucas Pereira', email: 'lucas@email.com', perfil: 'condomino', unidadeId: 'b', unidade: { numero: '105', bloco: 'A' } }, { id: '3', nome: 'Ana Souza', email: 'ana@email.com', perfil: 'condomino', unidadeId: 'c', unidade: { numero: '804', bloco: 'B' } }]
+const demoPurchases: Purchase[] = [
+  { id: 'CM-1048', data: new Date().toISOString(), quantidade: 2, valor: 10.98, usuario: { id: '1', nome: 'Camila Rocha' }, unidade: { id: '1', numero: '302', bloco: 'A' }, item: { id: '1', nome: 'Leite integral 1L', categoria: 'Laticínios' } },
+  { id: 'CM-1047', data: new Date(Date.now() - 3600000).toISOString(), quantidade: 1, valor: 18.5, usuario: { id: '2', nome: 'Lucas Pereira' }, unidade: { id: '2', numero: '105', bloco: 'A' }, item: { id: '2', nome: 'Café moído 500g', categoria: 'Mercearia' } },
+  { id: 'CM-1046', data: new Date(Date.now() - 86400000).toISOString(), quantidade: 1, valor: 12.9, usuario: { id: '3', nome: 'Ana Souza' }, unidade: { id: '3', numero: '804', bloco: 'B' }, item: { id: '3', nome: 'Ovos caipiras · 12 un.', categoria: 'Mercearia' } },
+]
+
+export function PurchasesPage({ resident = false }: { resident?: boolean }) {
+  const { demo } = useAuth()
+  const [purchases, setPurchases] = useState(demo ? demoPurchases : [])
+  const [error, setError] = useState('')
+  useEffect(() => { if (!demo) api<Purchase[]>('/compras').then(setPurchases).catch((caught: Error) => setError(caught.message)) }, [demo])
+  const total = purchases.reduce((sum, purchase) => sum + Number(purchase.valor), 0)
+  return <><section className="page-title-row"><div><span className="eyebrow"><i />{resident ? 'SEU HISTÓRICO' : 'MOVIMENTAÇÃO DO MERCADO'}</span><h1>{resident ? 'Minhas compras' : 'Compras'}</h1><p>{resident ? 'Acompanhe os produtos retirados na sua unidade.' : 'Acompanhe as compras e retiradas dos moradores.'}</p></div><button className="button button-secondary"><Download size={16} />Exportar</button></section><section className="metric-grid compact-metrics"><MiniMetric icon={<ShoppingBag />} label={resident ? 'Compras neste mês' : 'Compras hoje'} value={resident ? String(purchases.length) : '18'} /><MiniMetric icon={<span className="money-symbol">R$</span>} label="Total no período" value={money(resident ? total : 428.5)} /></section><section className={`panel recent-panel ${resident ? 'resident-purchases' : 'manager-purchases'}`}><div className="panel-heading"><div><span className="panel-eyebrow">JUNHO 2026</span><h2>Histórico de compras</h2></div><button className="button button-filter"><span>⌁</span>Filtrar</button></div>{error && <div className="inline-error" role="alert">{error}</div>}<div className="table-scroll"><table><thead><tr><th>COMPRA</th>{!resident && <th>UNIDADE</th>}<th>DATA</th><th>ITENS</th><th>VALOR</th><th>STATUS</th></tr></thead><tbody>{purchases.map((purchase) => <tr key={purchase.id}><td><span className="table-product"><span className="purchase-thumb"><ShoppingBag size={15} /></span><span><strong>{purchase.item.nome}</strong><small>#{purchase.id}</small></span></span></td>{!resident && <td>Apto {purchase.unidade.numero}</td>}<td>{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(purchase.data))}</td><td>{purchase.quantidade} un.</td><td><strong>{money(purchase.valor)}</strong></td><td><span className="status-pill status-ok"><i />Retirado</span></td></tr>)}</tbody></table>{purchases.length === 0 && !error && <div className="empty-state">Nenhuma compra registrada neste período.</div>}</div></section></>
+}
+
+export function BuyPage() {
+  const { demo } = useAuth()
+  const { notify } = useOutletContext<ShellContext>()
+  const [products, setProducts] = useState<Product[]>(() => demo ? demoProducts : [])
+  const [selected, setSelected] = useState('')
+  const [quantity, setQuantity] = useState(1)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    if (!demo) api<Product[]>('/estoque').then(setProducts).catch((caught: Error) => setError(caught.message))
+  }, [demo])
+  const item = products.find((product) => product.id === selected)
+  const submit = async () => {
+    if (!item) return
+    setBusy(true)
+    setError('')
+    try {
+      if (!demo) await api<Purchase>('/compras', { method: 'POST', body: JSON.stringify({ itemId: item.id, quantidade: quantity }) })
+      setProducts((current) => current.map((product) => product.id === item.id ? { ...product, quantidade: product.quantidade - quantity } : product))
+      setSelected('')
+      setQuantity(1)
+      notify('Compra registrada. O estoque foi atualizado.')
+    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível registrar a compra.') }
+    finally { setBusy(false) }
+  }
+  return <><section className="page-title-row"><div><span className="eyebrow"><i /> MERCADO DO CONDOMÍNIO</span><h1>Comprar produtos</h1><p>Escolha o que precisa e registre a retirada na sua unidade.</p></div><Link className="button button-secondary" to="/minhas-compras"><ShoppingBag size={16} />Meu histórico</Link></section><div className="buy-layout"><section className="panel buy-panel"><div className="panel-heading"><div><span className="panel-eyebrow">PRODUTOS DISPONÍVEIS</span><h2>Escolha um produto</h2></div><span className="available-label"><i />Estoque atualizado</span></div><div className="shop-product-list">{products.filter((product) => product.quantidade > 0).map((product) => <button className={`shop-product ${selected === product.id ? 'shop-product-selected' : ''}`} key={product.id} onClick={() => { setSelected(product.id); setError('') }}><span className="product-thumb"><PackagePlus size={18} /></span><span className="shop-product-name"><strong>{product.nome}</strong><small>{product.categoria} · {product.quantidade} disponíveis</small></span><strong className="shop-product-price">{money(product.preco)}</strong><i className="radio-dot" /></button>)}{products.length === 0 && <div className="empty-state">Carregando produtos disponíveis…</div>}</div></section><aside className="panel order-panel"><span className="panel-eyebrow">SUA RETIRADA</span><h2>Resumo da compra</h2>{item ? <><div className="order-item"><span className="product-thumb"><PackagePlus size={17} /></span><span><strong>{item.nome}</strong><small>{money(item.preco)} / unidade</small></span></div><label className="quantity-control">Quantidade<span><button aria-label="Diminuir quantidade" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}>−</button><input aria-label="Quantidade" min="1" max={item.quantidade} type="number" value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(item.quantidade, Number(event.target.value))))} /><button aria-label="Aumentar quantidade" disabled={quantity >= item.quantidade} onClick={() => setQuantity((value) => Math.min(item.quantidade, value + 1))}>+</button></span></label><div className="order-total"><span>Total</span><strong>{money(item.preco * quantity)}</strong></div><button className="button button-primary order-submit" disabled={busy} onClick={() => { void submit() }}>{busy ? 'Registrando…' : 'Confirmar retirada'}<ArrowUpRight size={16} /></button></> : <div className="order-empty"><span className="order-empty-icon"><ShoppingBag size={20} /></span><p>Selecione um produto para ver o resumo.</p></div>}{error && <p className="form-error" role="alert">{error}</p>}<p className="order-note"><House size={14} />Retirada vinculada à sua unidade cadastrada.</p></aside></div></>
+}
+
+export function UnitsPage({ resident = false }: { resident?: boolean }) {
+  const { demo } = useAuth()
+  const { notify } = useOutletContext<ShellContext>()
+  const [units, setUnits] = useState<Unit[]>(() => demo ? (resident ? [demoUnits[0]] : demoUnits) : [])
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<Unit | null>(null)
+  useEffect(() => {
+    if (demo) return
+    if (resident) api<Unit>('/unidades/minha-unidade').then((unit) => setUnits([unit])).catch((error: Error) => notify(error.message))
+    else api<Unit[]>('/unidades').then(setUnits).catch((error: Error) => notify(error.message))
+  }, [demo, resident, notify])
+  const unit = units[0]
+  const saveUnit = async (data: { numero: string; bloco?: string }, id?: string) => {
+    if (demo) setUnits((current) => id ? current.map((item) => item.id === id ? { ...item, ...data } : item) : [...current, { ...data, id: `d${Date.now()}`, moradores: [] }])
+    else if (id) await api<Unit>(`/unidades/${id}`, { method: 'PATCH', body: JSON.stringify(data) }).then((saved) => setUnits((current) => current.map((item) => item.id === id ? saved : item)))
+    else await api<Unit>('/unidades', { method: 'POST', body: JSON.stringify(data) }).then((saved) => setUnits((current) => [...current, saved]))
+    setModalOpen(false)
+    setEditing(null)
+    notify(id ? 'Unidade atualizada.' : 'Unidade cadastrada.')
+  }
+  if (resident) return <><section className="page-title-row"><div><span className="eyebrow"><i />DADOS DO CONDOMÍNIO</span><h1>Minha unidade</h1><p>Informações vinculadas ao seu cadastro.</p></div></section>{unit ? <section className="unit-profile panel"><span className="unit-icon"><House size={23} /></span><div><span className="panel-eyebrow">CONDOMÍNIO PÁTIO DAS FLORES</span><h2>Unidade {unit.numero}</h2><p>Bloco {unit.bloco ?? '—'} <i>·</i> {unit.moradores.length} moradores cadastrados</p></div><span className="status-pill status-ok"><i />Cadastro ativo</span></section> : <section className="panel empty-state">Nenhuma unidade vinculada ao seu cadastro.</section>}<section className="panel unit-details"><h2>Resumo do mês</h2><div><span>Compras realizadas</span><strong>Consulte minhas compras</strong></div><div><span>Unidade cadastrada</span><strong>{unit ? `${unit.bloco ?? ''} ${unit.numero}` : 'Não vinculada'}</strong></div></section></>
+  return <><section className="page-title-row"><div><span className="eyebrow"><i />MORADORES E CADASTROS</span><h1>Unidades</h1><p>Unidades e moradores do Condomínio Pátio das Flores.</p></div><button className="button button-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={17} />Nova unidade</button></section><section className="metric-grid compact-metrics"><MetricCard icon={<House />} label="Unidades cadastradas" value={String(units.length)} detail="no condomínio" /><MetricCard icon={<UsersRound />} label="Moradores vinculados" value={String(units.reduce((total, item) => total + item.moradores.length, 0))} detail="nas unidades listadas" /></section><section className="panel unit-details"><div className="panel-heading"><div><span className="panel-eyebrow">CADASTROS RECENTES</span><h2>Unidades do condomínio</h2></div></div>{units.map((item) => <div className="unit-row" key={item.id}><span className="unit-icon small"><House size={17} /></span><span><strong>Apto {item.numero}</strong><small>Bloco {item.bloco ?? '—'} · {item.moradores.map((residentItem) => residentItem.nome).join(', ') || 'Sem moradores vinculados'}</small></span><span className="unit-count">{item.moradores.length} morador(es)</span><button className="icon-button row-action" aria-label={`Editar unidade ${item.numero}`} onClick={() => { setEditing(item); setModalOpen(true) }}><Pencil size={14} /></button></div>)}</section>{modalOpen && <UnitModal initial={editing} onClose={() => { setModalOpen(false); setEditing(null) }} onSave={saveUnit} />}</>
+}
+
+export function UsersPage() {
+  const { demo, user: actor } = useAuth()
+  const { notify } = useOutletContext<ShellContext>()
+  const [users, setUsers] = useState<Resident[]>(() => demo ? demoResidents : [])
+  const [units, setUnits] = useState<{ id: string; numero: string; bloco?: string | null }[]>(() => demo ? demoUnits.map(({ id, numero, bloco }) => ({ id, numero, bloco })) : [])
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<Resident | null>(null)
+  useEffect(() => {
+    if (demo) return
+    Promise.all([api<Resident[]>('/usuarios'), api<{ id: string; numero: string; bloco?: string | null }[]>('/unidades')]).then(([residentList, unitList]) => { setUsers(residentList); setUnits(unitList) }).catch((error: Error) => notify(error.message))
+  }, [demo, notify])
+  const saveUser = async (data: { nome: string; email: string; perfil: string; unidadeId?: string }, id?: string) => {
+    if (demo) setUsers((current) => id ? current.map((item) => item.id === id ? { ...item, ...data, unidade: units.find((unit) => unit.id === data.unidadeId) ?? null } : item) : [...current, { ...data, id: `d${Date.now()}`, unidade: units.find((unit) => unit.id === data.unidadeId) ?? null }])
+    else {
+      await api<Resident>(id ? `/usuarios/${id}` : '/usuarios', { method: id ? 'PATCH' : 'POST', body: JSON.stringify({ ...data, perfil: data.perfil.toUpperCase() }) })
+      setUsers(await api<Resident[]>('/usuarios'))
+    }
+    setModalOpen(false)
+    setEditing(null)
+    notify(id ? 'Cadastro atualizado.' : 'Morador cadastrado.')
+  }
+  return <><section className="page-title-row"><div><span className="eyebrow"><i />ACESSO AO CONDOMÍNIO</span><h1>Moradores</h1><p>Perfis e unidades vinculados ao minimercado.</p></div><button className="button button-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={17} />Cadastrar morador</button></section><section className="panel table-panel"><div className="panel-heading users-heading"><div><span className="panel-eyebrow">CADASTROS</span><h2>{users.length} moradores</h2></div></div><div className="table-scroll"><table><thead><tr><th>MORADOR</th><th>E-MAIL</th><th>UNIDADE</th><th>PERFIL</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>{users.map((residentUser) => <tr key={residentUser.id}><td><span className="table-product"><span className="avatar table-avatar">{residentUser.nome.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><strong>{residentUser.nome}</strong></span></td><td>{residentUser.email}</td><td>{residentUser.unidade ? `Apto ${residentUser.unidade.numero} · Bloco ${residentUser.unidade.bloco ?? '—'}` : 'Sem unidade'}</td><td><span className="category-label">{residentUser.perfil === 'condomino' ? 'Condômino' : residentUser.perfil}</span></td><td>{(actor?.perfil === 'gestor' || residentUser.perfil === 'condomino') && <button className="icon-button row-action" aria-label={`Editar cadastro de ${residentUser.nome}`} onClick={() => { setEditing(residentUser); setModalOpen(true) }}><Pencil size={14} /></button>}</td></tr>)}</tbody></table></div></section>{modalOpen && <ResidentModal initial={editing} units={units} manager={actor?.perfil === 'gestor'} onClose={() => { setModalOpen(false); setEditing(null) }} onSave={saveUser} />}</>
+}
+
+function UnitModal({ initial, onClose, onSave }: { initial: Unit | null; onClose: () => void; onSave: (data: { numero: string; bloco?: string }, id?: string) => Promise<void> }) {
+  const [numero, setNumero] = useState(initial?.numero ?? '')
+  const [bloco, setBloco] = useState(initial?.bloco ?? '')
+  const [error, setError] = useState('')
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); try { await onSave({ numero: numero.trim(), bloco: bloco.trim() || undefined }, initial?.id) } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível salvar a unidade.') } }
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="unit-modal-heading"><div className="modal-heading"><div><span className="panel-eyebrow">UNIDADE CONDOMINIAL</span><h2 id="unit-modal-heading">{initial ? 'Editar unidade' : 'Nova unidade'}</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose}><X size={18} /></button></div><form onSubmit={(event) => { void submit(event) }}><label>Número<input autoFocus required value={numero} onChange={(event) => setNumero(event.target.value)} placeholder="Ex.: 302" /></label><label>Bloco<input value={bloco} onChange={(event) => setBloco(event.target.value)} placeholder="Ex.: A" /></label>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary">Salvar unidade</button></div></form></section></div>
+}
+
+function ResidentModal({ initial, units, manager, onClose, onSave }: { initial: Resident | null; units: { id: string; numero: string; bloco?: string | null }[]; manager: boolean; onClose: () => void; onSave: (data: { nome: string; email: string; perfil: string; unidadeId?: string }, id?: string) => Promise<void> }) {
+  const [nome, setNome] = useState(initial?.nome ?? '')
+  const [email, setEmail] = useState(initial?.email ?? '')
+  const [perfil, setPerfil] = useState(initial?.perfil ?? 'condomino')
+  const [unidadeId, setUnidadeId] = useState(initial?.unidadeId ?? '')
+  const [error, setError] = useState('')
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); try { await onSave({ nome: nome.trim(), email: email.trim(), perfil, unidadeId: unidadeId || undefined }, initial?.id) } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível salvar o morador.') } }
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="resident-modal-heading"><div className="modal-heading"><div><span className="panel-eyebrow">ACESSO AO CONDOMÍNIO</span><h2 id="resident-modal-heading">{initial ? 'Editar cadastro' : 'Cadastrar morador'}</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose}><X size={18} /></button></div><form onSubmit={(event) => { void submit(event) }}><label>Nome<input autoFocus required minLength={2} value={nome} onChange={(event) => setNome(event.target.value)} /></label><label>E-mail Google<input required type="email" disabled={Boolean(initial)} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="morador@exemplo.com" /></label><label>Unidade<select value={unidadeId} onChange={(event) => setUnidadeId(event.target.value)}><option value="">Sem unidade vinculada</option>{units.map((unit) => <option value={unit.id} key={unit.id}>Bloco {unit.bloco ?? '—'} · Apto {unit.numero}</option>)}</select></label>{manager && <label>Perfil<select value={perfil} onChange={(event) => setPerfil(event.target.value)}><option value="condomino">Condômino</option><option value="sindico">Síndico</option><option value="gestor">Gestor</option></select></label>}{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary">Salvar cadastro</button></div></form></section></div>
+}
+
+function MiniMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) { return <article className="mini-metric"><span className="metric-icon icon-green">{icon}</span><span><small>{label}</small><strong>{value}</strong></span></article> }
+function MetricCard({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: string; detail: string }) { return <article className="metric-card"><div className="metric-top"><span className="metric-icon icon-green">{icon}</span></div><span className="metric-label">{label}</span><strong className="metric-value">{value}</strong><span className="metric-detail">{detail}</span></article> }

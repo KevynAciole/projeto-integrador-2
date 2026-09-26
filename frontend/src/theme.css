@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #26362f;
+  background: #f4f7f2;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ink: #26362f;
+  --muted: #7c8881;
+  --green: #247653;
+  --green-dark: #174d37;
+  --line: #e8ece6;
+  --paper: #fff;
+  --canvas: #f4f7f2;
+  --serif: 'Manrope', sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #e7a850; outline-offset: 3px; }
+::selection { color: #fff; background: #267754; }
+a { color: inherit; }
+svg { flex-shrink: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+:root[data-text-size='large'] { font-size: 19px; }
+:root[data-contrast='high'] { --ink: #101510; --muted: #37433b; --green: #075d34; --green-dark: #063c22; --line: #87968b; --canvas: #fff; color: #101510; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
