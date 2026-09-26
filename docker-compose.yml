@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: minimercado
+      POSTGRES_USER: minimercado
+      POSTGRES_PASSWORD: minimercado
+    ports:
+      - "5432:5432"
+    volumes:
+      - minimercado-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minimercado -d minimercado"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  minimercado-postgres:
