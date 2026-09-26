@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Perfil {
+  GESTOR
+  SINDICO
+  CONDOMINO
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  googleId  String?  @unique
+  email     String   @unique
+  nome      String
+  perfil    Perfil   @default(CONDOMINO)
+  unidadeId String?
+  unidade   Unidade? @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  compras   Compra[]
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Unidade {
+  id         String            @id @default(cuid())
+  numero     String            @unique
+  bloco      String?
+  moradores  Usuario[]
+  compras    Compra[]
+  relatorios RelatorioMensal[]
+  criadoEm   DateTime          @default(now())
+}
+
+model ItemEstoque {
+  id         String   @id @default(cuid())
+  nome       String
+  categoria  String
+  quantidade Int      @default(0)
+  preco      Decimal  @db.Decimal(10, 2)
+  ativo      Boolean  @default(true)
+  compras    Compra[]
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([nome])
+  @@index([categoria, ativo])
+}
+
+model Compra {
+  id         String     @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  unidadeId  String
+  unidade    Unidade    @relation(fields: [unidadeId], references: [id], onDelete: Restrict)
+  itemId     String
+  item       ItemEstoque @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantidade Int
+  valor      Decimal    @db.Decimal(10, 2)
+  data       DateTime   @default(now())
+
+  @@index([usuarioId, data])
+  @@index([unidadeId, data])
+}
+
+model RelatorioMensal {
+  id        String   @id @default(cuid())
+  unidadeId String
+  unidade   Unidade  @relation(fields: [unidadeId], references: [id], onDelete: Cascade)
+  mes       Int
+  ano       Int
+  valorTotal Decimal @default(0) @db.Decimal(12, 2)
+  geradoEm  DateTime @updatedAt
+
+  @@unique([unidadeId, ano, mes])
+  @@index([ano, mes])
+}
