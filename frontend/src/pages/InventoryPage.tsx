@@ -16,13 +16,19 @@ type ShellContext = { notify: (message: string) => void }
 export function InventoryPage() {
   const { demo } = useAuth()
   const { notify } = useOutletContext<ShellContext>()
-  const [products, setProducts] = useState(examples)
+  const [products, setProducts] = useState<Product[]>(() => demo ? examples : [])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('Todas as categorias')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
 
-  useEffect(() => { if (!demo) api<Product[]>('/estoque').then(setProducts).catch((error: Error) => notify(error.message)) }, [demo, notify])
+  useEffect(() => {
+    if (demo) return
+    api<Product[]>('/estoque').then(setProducts).catch((error: Error) => {
+      setProducts([])
+      notify(error.message)
+    })
+  }, [demo, notify])
   const categories = Array.from(new Set(products.map((product) => product.categoria)))
   const filtered = useMemo(() => products.filter((product) => product.nome.toLowerCase().includes(query.toLowerCase()) && (category === 'Todas as categorias' || product.categoria === category)), [products, query, category])
 

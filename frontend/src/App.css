@@ -150,6 +150,7 @@ td > strong { color: #3e4b42; font-weight: 600; }
 .status-warning { color: #9f702e; background: #faf3e6; }
 .status-danger { color: #ad5d4d; background: #fbefec; }
 .empty-state { padding: 30px 14px; color: #8b978e; text-align: center; font-size: 11px; }
+.chart-empty { display: grid; min-height: 130px; place-items: center; padding: 18px; color: #8b978e; text-align: center; font-size: 11px; }
 .page-title-row { margin-bottom: 23px; }
 .page-title-row h1 { margin-top: 9px; }
 .inventory-summary { display: flex; justify-content: space-between; margin: -3px 1px 12px; color: #869188; font-size: 10px; }

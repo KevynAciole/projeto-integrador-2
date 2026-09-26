@@ -7,7 +7,7 @@ import type { Role } from './auth/auth-context'
 import { DashboardPage } from './pages/DashboardPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { PurchasesPage, BuyPage, UnitsPage, UsersPage } from './pages/CommercePages'
-import { ReportsPage } from './pages/ReportsPage'
+import { ReportsPage } from './pages/ReportsPageLive'
 import { LoginPage } from './pages/LoginPage'
 import './App.css'
 
