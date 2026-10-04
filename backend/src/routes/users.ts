@@ -9,22 +9,6 @@ import { prisma } from '../lib/prisma'
 import { allowRoles, type AuthUser } from '../middleware/auth'
 
 export const usersRouter = Router()
-const createSchema = z.object({
-  nome: z.string().trim().min(2).max(120),
-  perfil: z.nativeEnum(Perfil),
-  emailGoogle: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
-  emailContato: z.string().trim().email().transform((value) => value.toLowerCase()),
-  telefone: z.string().trim().optional().transform((value) => value ? normalizePhone(value) : undefined),
-  unidadeId: z.string().optional(),
-}).superRefine((data, context) => {
-  if (data.perfil === Perfil.CONDOMINO) {
-    if (!data.emailGoogle) context.addIssue({ code: z.ZodIssueCode.custom, path: ['emailGoogle'], message: 'Condôminos precisam de uma conta Google.' })
-    if (!data.telefone || data.telefone.length < 10 || data.telefone.length > 15) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone válido para o condômino.' })
-    if (!data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Condôminos devem estar vinculados a uma unidade.' })
-  }
-  if (data.perfil === Perfil.VISITANTE && data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Visitantes não podem ser vinculados a uma unidade.' })
-  if (data.telefone && (data.telefone.length < 10 || data.telefone.length > 15)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone com 10 a 15 dígitos.' })
-})
 const updateSchema = z.object({
   nome: z.string().trim().min(2).max(120).optional(),
   perfil: z.nativeEnum(Perfil).optional(),
@@ -45,33 +29,9 @@ usersRouter.get('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(asyn
   })))
 }))
 
-usersRouter.post('/auto-inscricao', asyncHandler(async (req, res) => {
-  const data = createSchema.parse({ ...req.body, perfil: Perfil.CONDOMINO })
-  const senhaTemporaria = createTemporaryPassword()
-  const user = await prisma.$transaction(async (transaction) => {
-    const created = await transaction.usuario.create({
-      data: {
-        numeroUsuario: await createUserNumber(transaction),
-        email: data.emailGoogle ?? data.emailContato,
-        emailContato: data.emailContato,
-        telefone: data.telefone ?? null,
-        senhaHash: await bcrypt.hash(senhaTemporaria, 12),
-        deveTrocarSenha: true,
-        nome: data.nome,
-        perfil: Perfil.CONDOMINO,
-        unidade: data.unidadeId ? { connect: { id: data.unidadeId } } : undefined,
-      },
-    })
-    await sendTemporaryCredentials({ to: created.emailContato, nome: created.nome, numeroUsuario: created.numeroUsuario, senhaTemporaria })
-    return created
-  }, { maxWait: 10000, timeout: 20000 })
-
-  return res.status(201).json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email, emailContato: user.emailContato, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha, notificacaoEnviada: true })
-}))
-
 usersRouter.post('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
   const actor = req.user as AuthUser
-  const data = createSchema.parse(req.body)
+  const data = createUserSchema.parse(req.body)
   if (actor.perfil === Perfil.SINDICO && data.perfil === Perfil.ADMIN) return res.status(403).json({ error: 'Síndicos não podem cadastrar administradores.' })
 
   const senhaTemporaria = createTemporaryPassword()
@@ -170,3 +130,20 @@ usersRouter.post('/:id/restaurar', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asy
 
   return res.status(204).end()
 }))
+
+export const createUserSchema = z.object({
+  nome: z.string().trim().min(2).max(120),
+  perfil: z.nativeEnum(Perfil),
+  emailGoogle: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
+  emailContato: z.string().trim().email().transform((value) => value.toLowerCase()),
+  telefone: z.string().trim().optional().transform((value) => value ? normalizePhone(value) : undefined),
+  unidadeId: z.string().optional(),
+}).superRefine((data, context) => {
+  if (data.perfil === Perfil.CONDOMINO) {
+    if (!data.emailGoogle) context.addIssue({ code: z.ZodIssueCode.custom, path: ['emailGoogle'], message: 'Condôminos precisam de uma conta Google.' })
+    if (!data.telefone || data.telefone.length < 10 || data.telefone.length > 15) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone válido para o condômino.' })
+    if (!data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Condôminos devem estar vinculados a uma unidade.' })
+  }
+  if (data.perfil === Perfil.VISITANTE && data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Visitantes não podem ser vinculados a uma unidade.' })
+  if (data.telefone && (data.telefone.length < 10 || data.telefone.length > 15)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone com 10 a 15 dígitos.' })
+})

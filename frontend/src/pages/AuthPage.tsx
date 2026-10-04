@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowUpRight, House, ShieldCheck } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { API_URL } from '../api'
@@ -11,10 +11,13 @@ export function LoginPage() {
   const { enterDemo, signIn, requestPasswordRecovery, selfRegisterCondomino } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [view, setView] = useState<'login' | 'recovery' | 'register'>('login')
+  const [showLocalLogin, setShowLocalLogin] = useState(false)
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [demoRole, setDemoRole] = useState<Role>('admin')
   const [recoveryIdentifier, setRecoveryIdentifier] = useState('')
+  const [showResetForm, setShowResetForm] = useState(false)
   const [resetToken, setResetToken] = useState('')
   const [resetPassword, setResetPassword] = useState('')
   const [resetConfirm, setResetConfirm] = useState('')
@@ -22,12 +25,42 @@ export function LoginPage() {
   const [selfEmail, setSelfEmail] = useState('')
   const [selfPhone, setSelfPhone] = useState('')
   const [selfUnit, setSelfUnit] = useState('')
+  const [units, setUnits] = useState<{ id: string; numero: string; bloco?: string | null }[]>([])
+  const [unitsLoading, setUnitsLoading] = useState(false)
+  const [registerStep, setRegisterStep] = useState(1)
   const [info, setInfo] = useState('')
   const [error, setError] = useState(new URLSearchParams(location.search).get('erro') === 'nao-cadastrado'
     ? 'Essa conta Google ainda não está cadastrada. Peça acesso à administração.'
     : new URLSearchParams(location.search).has('erro') ? 'Não foi possível concluir o login.' : '')
   const [busy, setBusy] = useState(false)
   const from = (location.state as { from?: string } | null)?.from
+
+  useEffect(() => {
+    if (view !== 'register' || units.length > 0) return
+    let active = true
+    fetch(`${API_URL}/inscricao/unidades`)
+      .then(async (response) => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error ?? 'Não foi possível carregar as unidades.')
+        return data as { id: string; numero: string; bloco?: string | null }[]
+      })
+      .then((data) => { if (active) setUnits(data) })
+      .catch((caught: Error) => {
+        if (active) setError(caught instanceof TypeError
+          ? 'Não foi possível conectar ao serviço para carregar as unidades.'
+          : caught.message)
+      })
+      .finally(() => { if (active) setUnitsLoading(false) })
+    return () => { active = false }
+  }, [view, units.length])
+
+  const changeView = (nextView: 'login' | 'recovery' | 'register') => {
+    setView(nextView)
+    setInfo('')
+    setError('')
+    setShowResetForm(false)
+    if (nextView === 'register' && units.length === 0) setUnitsLoading(true)
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -43,6 +76,69 @@ export function LoginPage() {
     }
   }
 
+  const submitRecovery = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setInfo('')
+    try {
+      await requestPasswordRecovery(recoveryIdentifier)
+      setInfo('Se os dados estiverem corretos, enviaremos instruções de recuperação para o e-mail cadastrado.')
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Não foi possível solicitar recuperação.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitReset = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setInfo('')
+    try {
+      if (resetPassword.length < 10) throw new Error('Use uma senha com pelo menos 10 caracteres.')
+      if (resetPassword !== resetConfirm) throw new Error('As senhas não conferem.')
+      const response = await fetch(`${API_URL}/auth/redefinir-senha`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, novaSenha: resetPassword }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error ?? 'Não foi possível redefinir a senha.')
+      setInfo('Senha redefinida. Agora você já pode entrar com sua nova senha.')
+      setShowResetForm(false)
+      setView('login')
+      setShowLocalLogin(true)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Não foi possível redefinir a senha.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitRegistration = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setInfo('')
+    try {
+      await selfRegisterCondomino({ nome: selfName, emailContato: selfEmail, telefone: selfPhone, unidadeId: selfUnit })
+      setInfo('Solicitação enviada. Você receberá as instruções de acesso no e-mail cadastrado.')
+      setView('login')
+      setSelfName('')
+      setSelfEmail('')
+      setSelfPhone('')
+      setSelfUnit('')
+      setRegisterStep(1)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Não foi possível concluir o cadastro.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return <main className="login-page">
     <section className="login-story">
       <div className="login-topline"><span className="brand-mark"><House size={19} /></span><span className="login-brand">mercado<span>.</span><small>do pátio</small></span><span className="login-edition">CONDOMÍNIO PÁTIO DAS FLORES</span></div>
@@ -50,39 +146,71 @@ export function LoginPage() {
       <div className="login-footnote"><span><ShieldCheck size={16} />Acesso exclusivo para moradores</span><span>01 — 03</span></div>
     </section>
     <section className="login-panel"><div className="login-panel-content">
-      <span className="login-kicker">BEM-VINDO AO MERCADO DO PÁTIO</span><h2>Entre para continuar</h2><p>Acesse com Google ou suas credenciais do condomínio.</p>
+      <span className="login-kicker">BEM-VINDO AO MERCADO DO PÁTIO</span>
+      <h2>{view === 'login' ? 'Entre para continuar' : view === 'recovery' ? 'Recupere seu acesso' : 'Cadastre-se como condômino'}</h2>
+      <p>{view === 'login' ? 'Acesse o mercado do seu condomínio de forma simples e segura.' : view === 'recovery' ? 'Vamos ajudar você a voltar para sua conta.' : 'Preencha seus dados em poucos passos.'}</p>
       {error && <div className="login-error" role="alert">{error}</div>}
-      <a className="google-button" href={`${API_URL}/auth/google`}><GoogleMark />Continuar com Google<ArrowUpRight size={16} /></a>
-      <div className="login-separator"><span />ou entre com número/telefone<span /></div>
-      <form className="local-login" onSubmit={(event) => { void submit(event) }}>
-        <label>Número de usuário ou telefone<input autoComplete="username" inputMode="tel" required value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="000123 ou (11) 99999-0000" /></label>
-        <label>Senha<input autoComplete="current-password" required type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-        <button className="button button-primary demo-button" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}<ArrowUpRight size={16} /></button>
-      </form>
-      <div className="login-separator"><span />recuperação de senha<span /></div>
-      <form className="local-login" onSubmit={async (event) => { event.preventDefault(); try { setBusy(true); setInfo(''); setError(''); await requestPasswordRecovery(recoveryIdentifier); setInfo('Se os dados estiverem corretos, enviaremos instruções de recuperação para o e-mail ou telefone cadastrado.'); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível solicitar recuperação.'); } finally { setBusy(false); } }}>
-        <label>Informe seu número/telefone para recuperar o acesso<input value={recoveryIdentifier} onChange={(event) => setRecoveryIdentifier(event.target.value)} placeholder="000123 ou (11) 99999-0000" /></label>
-        <button type="submit" className="button button-dark demo-button" disabled={busy}>Solicitar recuperação</button>
-      </form>
-      <div className="login-separator"><span />redefinir senha<span /></div>
-      <form className="local-login" onSubmit={async (event) => { event.preventDefault(); try { setBusy(true); setInfo(''); setError(''); if (resetPassword.length < 10) throw new Error('Use uma senha com pelo menos 10 caracteres.'); if (resetPassword !== resetConfirm) throw new Error('As senhas não conferem.'); await fetch(`${API_URL}/auth/redefinir-senha`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken, novaSenha: resetPassword }) }).then(async (response) => { const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error ?? 'Não foi possível redefinir a senha.'); setInfo('Senha redefinida com sucesso.'); }); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível redefinir a senha.'); } finally { setBusy(false); } }}>
-        <label>Token de recuperação<input value={resetToken} onChange={(event) => setResetToken(event.target.value)} placeholder="Cole o token recebido" /></label>
-        <label>Nova senha<input type="password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder="Mínimo 10 caracteres" /></label>
-        <label>Confirmar nova senha<input type="password" value={resetConfirm} onChange={(event) => setResetConfirm(event.target.value)} placeholder="Repita a nova senha" /></label>
-        <button type="submit" className="button button-primary demo-button" disabled={busy}>Redefinir senha</button>
-      </form>
-      <div className="login-separator"><span />autoinscrição de condômino<span /></div>
-      <form className="local-login" onSubmit={async (event) => { event.preventDefault(); try { setBusy(true); setInfo(''); setError(''); if (!selfName || !selfEmail || !selfPhone || !selfUnit) throw new Error('Preencha nome, e-mail, telefone e unidade.'); await selfRegisterCondomino({ nome: selfName, emailContato: selfEmail, telefone: selfPhone, unidadeId: selfUnit }); setInfo('Cadastro enviado com sucesso. Você receberá as instruções de acesso no e-mail cadastrado.'); setSelfName(''); setSelfEmail(''); setSelfPhone(''); setSelfUnit(''); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Não foi possível cadastrar o condômino.'); } finally { setBusy(false); } }}>
-        <label>Nome completo<input value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Ex.: Ana Souza" /></label>
-        <label>E-mail de contato<input type="email" value={selfEmail} onChange={(event) => setSelfEmail(event.target.value)} placeholder="ana@exemplo.com" /></label>
-        <label>Telefone<input value={selfPhone} onChange={(event) => setSelfPhone(event.target.value)} placeholder="(11) 99999-0000" /></label>
-        <label>Unidade vinculado<input value={selfUnit} onChange={(event) => setSelfUnit(event.target.value)} placeholder="ID da unidade" /></label>
-        <button type="submit" className="button button-dark demo-button" disabled={busy}>Cadastrar-se como condômino</button>
-      </form>
       {info && <div className="login-success" role="status">{info}</div>}
-      <div className="login-separator"><span />modo demonstração<span /></div>
-      <div className="demo-entry"><div className="demo-title"><span className="demo-icon">✳</span><span><strong>Conhecer o sistema</strong><small>Dados fictícios, sem gravação no banco</small></span></div><label htmlFor="demo-role">Perfil de acesso</label><select id="demo-role" value={demoRole} onChange={(event) => setDemoRole(event.target.value as Role)}><option value="admin">Administrador</option><option value="sindico">Síndico</option><option value="estoquista">Gestor de Estoque</option><option value="condomino">Condômino</option><option value="visitante">Visitante</option></select><button className="button button-dark demo-button" onClick={() => { enterDemo(demoRole); navigate(startPath[demoRole]) }}>Entrar na demonstração<ArrowUpRight size={16} /></button></div>
-      <p className="privacy-note"><ShieldCheck size={14} />A senha temporária deve ser trocada no primeiro acesso.</p>
+      {view === 'login' && <>
+        <a className="google-button google-button-primary" href={`${API_URL}/auth/google`}><GoogleMark />Continuar com Google<ArrowUpRight size={16} /></a>
+        <div className="login-separator"><span />ou<span /></div>
+        {!showLocalLogin
+          ? <button className="button button-secondary local-login-toggle" onClick={() => setShowLocalLogin(true)}>Entrar com número ou telefone</button>
+          : <form className="local-login" onSubmit={(event) => { void submit(event) }}>
+            <label>Número de usuário ou telefone<input autoComplete="username" inputMode="tel" required value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Ex.: 000123 ou (11) 99999-0000" /></label>
+            <label>Senha<input autoComplete="current-password" required type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+            <button className="button button-primary demo-button" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}<ArrowUpRight size={16} /></button>
+            <button type="button" className="text-link login-inline-link" onClick={() => changeView('recovery')}>Esqueci minha senha</button>
+          </form>}
+        {!showLocalLogin && <button className="text-link login-inline-link" onClick={() => changeView('recovery')}>Esqueci minha senha</button>}
+        <p className="login-register-prompt">Ainda não tem acesso? <button className="text-link" onClick={() => changeView('register')}>Cadastre-se como condômino</button></p>
+        <div className="login-separator"><span />modo demonstração<span /></div>
+        <div className="demo-entry"><div className="demo-title"><span className="demo-icon">✳</span><span><strong>Conhecer o sistema</strong><small>Dados fictícios, sem gravação no banco</small></span></div><label htmlFor="demo-role">Perfil de acesso</label><select id="demo-role" value={demoRole} onChange={(event) => setDemoRole(event.target.value as Role)}><option value="admin">Administrador</option><option value="sindico">Síndico</option><option value="estoquista">Gestor de Estoque</option><option value="condomino">Condômino</option><option value="visitante">Visitante</option></select><button className="button button-dark demo-button" onClick={() => { enterDemo(demoRole); navigate(startPath[demoRole]) }}>Entrar na demonstração<ArrowUpRight size={16} /></button></div>
+        <p className="privacy-note"><ShieldCheck size={14} />A senha temporária deve ser trocada no primeiro acesso.</p>
+      </>}
+      {view === 'recovery' && <>
+        {!showResetForm
+          ? <form className="local-login auth-flow-form" onSubmit={(event) => { void submitRecovery(event) }}>
+            <label>Número de usuário ou telefone<input autoComplete="username" required value={recoveryIdentifier} onChange={(event) => setRecoveryIdentifier(event.target.value)} placeholder="Ex.: 000123 ou (11) 99999-0000" /></label>
+            <button type="submit" className="button button-primary demo-button" disabled={busy}>{busy ? 'Enviando…' : 'Enviar instruções'}</button>
+            <button type="button" className="text-link login-inline-link" onClick={() => setShowResetForm(true)}>Já tenho um token de recuperação</button>
+          </form>
+          : <form className="local-login auth-flow-form" onSubmit={(event) => { void submitReset(event) }}>
+            <label>Token de recuperação<input required value={resetToken} onChange={(event) => setResetToken(event.target.value)} placeholder="Cole o token recebido" /></label>
+            <label>Nova senha<input autoComplete="new-password" minLength={10} required type="password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder="Mínimo 10 caracteres" /></label>
+            <label>Confirmar nova senha<input autoComplete="new-password" required type="password" value={resetConfirm} onChange={(event) => setResetConfirm(event.target.value)} /></label>
+            <button type="submit" className="button button-primary demo-button" disabled={busy}>{busy ? 'Salvando…' : 'Redefinir senha'}</button>
+          </form>}
+        <button className="text-link login-inline-link" onClick={() => changeView('login')}>Voltar para entrar</button>
+      </>}
+      {view === 'register' && <>
+        {info
+          ? <div className="auth-registration-success"><p>{info}</p><button className="button button-primary" onClick={() => changeView('login')}>Voltar para entrar</button></div>
+          : <>
+            <div className="registration-progress" aria-label={`Etapa ${registerStep} de 3`}>
+              {[1, 2, 3].map((step) => <span key={step} className={step <= registerStep ? 'step-active' : ''}><i>{step}</i>{step === 1 ? 'Seus dados' : step === 2 ? 'Sua unidade' : 'Confirmação'}</span>)}
+            </div>
+            {registerStep === 1 && <form className="local-login auth-flow-form" onSubmit={(event) => { event.preventDefault(); setRegisterStep(2); setError('') }}>
+              <label>Nome completo<input autoComplete="name" required minLength={2} value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Ex.: Ana Souza" /></label>
+              <label>E-mail de contato<input autoComplete="email" required type="email" value={selfEmail} onChange={(event) => setSelfEmail(event.target.value)} placeholder="voce@exemplo.com" /></label>
+              <label>Telefone<input autoComplete="tel" required inputMode="tel" value={selfPhone} onChange={(event) => setSelfPhone(event.target.value)} placeholder="(11) 99999-0000" /></label>
+              <button className="button button-primary demo-button">Continuar</button>
+            </form>}
+            {registerStep === 2 && <form className="local-login auth-flow-form" onSubmit={(event) => { event.preventDefault(); setRegisterStep(3); setError('') }}>
+              <label>Bloco e apartamento<select required value={selfUnit} onChange={(event) => setSelfUnit(event.target.value)} disabled={unitsLoading || units.length === 0}>
+                <option value="">{unitsLoading ? 'Carregando unidades…' : units.length ? 'Selecione sua unidade' : 'Nenhuma unidade disponível'}</option>
+                {units.map((unit) => <option value={unit.id} key={unit.id}>Bloco {unit.bloco ?? '—'} · Apto {unit.numero}</option>)}
+              </select></label>
+              {!unitsLoading && units.length === 0 && <p className="auth-help-text">Não foi possível encontrar unidades para cadastro. Fale com a administração.</p>}
+              <div className="auth-step-actions"><button type="button" className="button button-secondary" onClick={() => setRegisterStep(1)}>Voltar</button><button className="button button-primary" disabled={!units.length}>Continuar</button></div>
+            </form>}
+            {registerStep === 3 && <form className="local-login auth-flow-form" onSubmit={(event) => { void submitRegistration(event) }}>
+              <div className="registration-summary"><span>Nome<strong>{selfName}</strong></span><span>E-mail<strong>{selfEmail}</strong></span><span>Telefone<strong>{selfPhone}</strong></span><span>Unidade<strong>{units.find((unit) => unit.id === selfUnit) ? `Bloco ${units.find((unit) => unit.id === selfUnit)?.bloco ?? '—'} · Apto ${units.find((unit) => unit.id === selfUnit)?.numero}` : ''}</strong></span></div>
+              <div className="auth-step-actions"><button type="button" className="button button-secondary" onClick={() => setRegisterStep(2)}>Voltar</button><button className="button button-primary" disabled={busy}>{busy ? 'Enviando…' : 'Confirmar cadastro'}</button></div>
+            </form>}
+          </>}
+        <button className="text-link login-inline-link" onClick={() => changeView('login')}>Voltar para entrar</button>
+      </>}
     </div><div className="login-panel-bottom"><span>Precisa de acesso? <a href="mailto:administracao@patiodasflores.com.br">Fale com a administração</a></span><span>© 2026 Mercado do Pátio</span></div></section>
   </main>
 }

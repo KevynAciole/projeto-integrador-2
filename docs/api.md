@@ -12,6 +12,8 @@ As rotas abaixo exigem sessão autenticada, salvo `/health`, `/auth/google`, `/a
 | `POST` | `/auth/login` | público | Login com número de usuário ou telefone e senha |
 | `POST` | `/auth/alterar-senha` | autenticado | Troca a senha temporária |
 | `POST` | `/auth/logout` | autenticado | Encerra a sessão |
+| `GET` | `/inscricao/unidades` | público | Lista bloco e número das unidades para autoinscrição |
+| `POST` | `/inscricao` | público | Solicita autoinscrição de condômino e envia credenciais |
 | `GET` | `/estoque` | todos os perfis | Lista produtos ativos |
 | `POST` | `/estoque` | administrador, estoquista | Cadastra produto |
 | `PATCH` | `/estoque/:id` | administrador, estoquista | Atualiza produto |

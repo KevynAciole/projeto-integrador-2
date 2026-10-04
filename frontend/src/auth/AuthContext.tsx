@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const selfRegisterCondomino = async (data: { nome: string; emailContato: string; telefone: string; unidadeId: string }) => {
-    const response = await fetch(`${API_URL}/usuarios/auto-inscricao`, {
+    const response = await fetch(`${API_URL}/inscricao`, {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome: data.nome, perfil: 'condomino', emailContato: data.emailContato, emailGoogle: data.emailContato, telefone: data.telefone, unidadeId: data.unidadeId }),
     })

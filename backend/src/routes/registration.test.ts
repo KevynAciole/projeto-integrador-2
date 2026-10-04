@@ -1,0 +1,78 @@
+import express from 'express'
+import request from 'supertest'
+import { prisma } from '../lib/prisma'
+import { sendTemporaryCredentials } from '../lib/mail'
+import { registrationRouter } from './registration'
+
+jest.mock('../lib/prisma', () => ({
+  prisma: {
+    unidade: { findMany: jest.fn() },
+    $transaction: jest.fn(),
+  },
+}))
+
+jest.mock('../lib/mail', () => ({
+  sendTemporaryCredentials: jest.fn(),
+  NotificationError: class NotificationError extends Error {
+    constructor(public readonly status: number, message: string) { super(message) }
+  },
+}))
+
+const app = express()
+app.use(express.json())
+app.use('/inscricao', registrationRouter)
+
+describe('autoinscrição pública', () => {
+  const createdUser = {
+    id: 'user-1',
+    numeroUsuario: '123456',
+    email: 'pessoa@example.com',
+    emailContato: 'pessoa@example.com',
+    telefone: '5511999999999',
+    nome: 'Pessoa Exemplo',
+    perfil: 'CONDOMINO',
+    unidadeId: 'unit-1',
+    deveTrocarSenha: true,
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(prisma.unidade.findMany as jest.Mock).mockResolvedValue([{ id: 'unit-1', numero: '101', bloco: 'A' }])
+    ;(prisma.$transaction as jest.Mock).mockImplementation((callback: (transaction: object) => Promise<unknown>) => callback({
+      usuario: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue(createdUser),
+      },
+    }))
+    ;(sendTemporaryCredentials as jest.Mock).mockResolvedValue(undefined)
+  })
+
+  it('publica somente os dados necessários para escolher uma unidade', async () => {
+    const response = await request(app).get('/inscricao/unidades')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual([{ id: 'unit-1', numero: '101', bloco: 'A' }])
+    expect(prisma.unidade.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      select: { id: true, numero: true, bloco: true },
+    }))
+  })
+
+  it('permite solicitar cadastro público e envia credenciais', async () => {
+    const response = await request(app).post('/inscricao').send({
+      nome: 'Pessoa Exemplo',
+      emailContato: 'pessoa@example.com',
+      emailGoogle: 'pessoa@example.com',
+      telefone: '(11) 99999-9999',
+      unidadeId: 'unit-1',
+    })
+
+    expect(response.status).toBe(201)
+    expect(response.body).toMatchObject({ id: 'user-1', unidadeId: 'unit-1', notificacaoEnviada: true })
+    expect(sendTemporaryCredentials).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'pessoa@example.com',
+      nome: 'Pessoa Exemplo',
+      numeroUsuario: '123456',
+      senhaTemporaria: expect.any(String),
+    }))
+  })
+})

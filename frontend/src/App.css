@@ -314,6 +314,31 @@ kbd { padding: 2px 4px; border: 1px solid #e5e9e4; border-radius: 3px; color: #9
 .google-button { display: flex; min-height: 43px; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid #e1e6e1; border-radius: 4px; color: #3f5045; text-decoration: none; font-size: 11px; font-weight: 600; }
 .google-button:hover { background: #f9faf8; }
 .google-button > svg:last-child { margin-left: auto; color: #88958b; }
+.google-button-primary { min-height: 48px; border-color: #246f4b; color: #fff; background: #246f4b; }
+.google-button-primary:hover { background: #19583a; }
+.google-button-primary > svg:last-child { color: #e2eee5; }
+.login-panel .login-separator { margin: 14px 0; }
+.local-login-toggle { width: 100%; min-height: 44px; }
+.login-inline-link { justify-content: center; width: 100%; margin-top: 5px; padding: 6px; }
+.login-register-prompt { margin: 15px 0 0; color: #859188; text-align: center; font-size: 10px; }
+.login-register-prompt .text-link { padding: 0 2px; }
+.auth-flow-form { margin-top: 18px; }
+.auth-flow-form label { font-size: 11px; }
+.auth-flow-form input, .auth-flow-form select { height: 42px; font-size: 12px; }
+.auth-step-actions { display: flex; gap: 9px; margin-top: 5px; }
+.auth-step-actions > .button { flex: 1; }
+.registration-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0; }
+.registration-progress > span { display: grid; justify-items: center; gap: 5px; color: #99a49b; font-size: 9px; text-align: center; }
+.registration-progress i { display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid #dce5dc; border-radius: 50%; color: #7b897e; font-size: 10px; font-style: normal; }
+.registration-progress .step-active { color: #246f4b; font-weight: 600; }
+.registration-progress .step-active i { border-color: #246f4b; color: #fff; background: #246f4b; }
+.registration-summary { display: grid; gap: 11px; padding: 15px; border: 1px solid #e8ede7; border-radius: 5px; background: #fbfcfa; }
+.registration-summary > span { display: grid; gap: 3px; color: #8a968d; font-size: 9px; }
+.registration-summary strong { color: #34463c; font-size: 11px; font-weight: 600; }
+.auth-help-text { margin: 0; color: #9a5144; font-size: 10px; line-height: 1.5; }
+.auth-registration-success { display: grid; gap: 12px; margin-top: 16px; }
+.auth-registration-success p { margin: 0; padding: 12px; border: 1px solid #d4ebdc; border-radius: 4px; color: #2b6d4d; background: #edf9f1; font-size: 11px; line-height: 1.5; }
+.auth-registration-success .button { width: 100%; }
 .local-login { display: grid; gap: 10px; }
 .local-login label, .password-panel label, .audit-filters label { display: grid; gap: 6px; color: #65756a; font-size: 10px; font-weight: 600; }
 .local-login input, .local-login select, .password-panel input, .password-panel select, .audit-filters input, .audit-filters select { width: 100%; height: 37px; padding: 0 10px; border: 1px solid #e2e9e2; border-radius: 4px; color: #384a3d; background: #fff; font-size: 11px; }

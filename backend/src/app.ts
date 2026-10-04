@@ -12,6 +12,7 @@ import { prisma } from './lib/prisma'
 import { NotificationError } from './lib/mail'
 import { requireAuth, requirePasswordUpdated } from './middleware/auth'
 import { authRouter, configurePassport } from './routes/auth'
+import { registrationRouter } from './routes/registration'
 import { productsRouter } from './routes/products'
 import { usersRouter } from './routes/users'
 import { unitsRouter } from './routes/units'
@@ -57,6 +58,7 @@ export function createApp() {
   app.get('/api/openapi.json', (_req, res) => res.json(openApiDocument))
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, { explorer: true }))
   app.use('/auth', authRouter)
+  app.use('/inscricao', registrationRouter)
   app.use('/estoque', requireAuth, requirePasswordUpdated, productsRouter)
   app.use('/usuarios', requireAuth, requirePasswordUpdated, usersRouter)
   app.use('/unidades', requireAuth, requirePasswordUpdated, unitsRouter)
