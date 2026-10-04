@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "concurrently -n api,web -c green,cyan \"npm run dev --workspace @minimercado/backend\" \"npm run dev --workspace @minimercado/frontend\"",
     "build": "npm run build --workspace @minimercado/backend && npm run build --workspace @minimercado/frontend",
+    "start": "npm run db:deploy --workspace @minimercado/backend && npm start --workspace @minimercado/backend",
     "test": "npm run test --workspace @minimercado/backend",
     "lint": "npm run lint --workspace @minimercado/backend && npm run lint --workspace @minimercado/frontend",
     "db:generate": "npm run db:generate --workspace @minimercado/backend",
