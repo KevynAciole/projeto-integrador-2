@@ -16,9 +16,11 @@ As rotas abaixo exigem sessão autenticada, salvo `/health`, `/auth/google`, `/a
 | `POST` | `/estoque` | administrador, estoquista | Cadastra produto |
 | `PATCH` | `/estoque/:id` | administrador, estoquista | Atualiza produto |
 | `DELETE` | `/estoque/:id` | administrador, estoquista | Desativa produto |
-| `GET` | `/usuarios` | administrador, síndico | Lista usuários |
+| `GET` | `/usuarios` | administrador, síndico | Lista usuários ativos; `?incluiExcluidos=true` inclui os excluídos |
 | `POST` | `/usuarios` | administrador, síndico | Cadastra usuário e envia credenciais |
 | `PATCH` | `/usuarios/:id` | administrador, síndico | Atualiza usuário dentro da regra de perfis |
+| `DELETE` | `/usuarios/:id` | administrador, síndico | Exclui usuário logicamente, preservando os dados |
+| `POST` | `/usuarios/:id/restaurar` | administrador, síndico | Restaura um usuário excluído |
 | `GET` | `/unidades` | administrador, síndico | Lista unidades e moradores |
 | `POST` | `/unidades` | administrador, síndico | Cadastra unidade |
 | `GET` | `/unidades/minha-unidade` | condômino | Consulta unidade vinculada à sessão |

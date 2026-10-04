@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, Download, House, PackagePlus, Pencil, Plus, ShoppingBag, UsersRound, X } from 'lucide-react'
+import { ArchiveRestore, ArrowUpRight, Download, House, PackagePlus, Pencil, Plus, RotateCcw, ShoppingBag, Trash2, UsersRound, X } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { api, money, type Product, type Purchase } from '../api'
 import { useAuth } from '../auth/useAuth'
 
 type ShellContext = { notify: (message: string) => void }
 type Unit = { id: string; numero: string; bloco?: string | null; moradores: { id?: string; nome: string }[] }
-type Resident = { id: string; numeroUsuario: string; nome: string; email?: string | null; emailContato: string; telefone?: string | null; perfil: string; unidadeId?: string | null; unidade?: { numero: string; bloco?: string | null } | null }
+type Resident = { id: string; numeroUsuario: string; nome: string; email?: string | null; emailContato: string; telefone?: string | null; perfil: string; unidadeId?: string | null; unidade?: { numero: string; bloco?: string | null } | null; excluidoEm?: string | null }
 const demoProducts: Product[] = [{ id: '1', nome: 'Leite integral 1L', categoria: 'Laticínios', quantidade: 24, preco: 5.49 }, { id: '2', nome: 'Café moído 500g', categoria: 'Mercearia', quantidade: 18, preco: 18.5 }, { id: '3', nome: 'Ovos caipiras · 12 un.', categoria: 'Mercearia', quantidade: 7, preco: 12.9 }]
 const demoUnits: Unit[] = [{ id: 'a', numero: '302', bloco: 'A', moradores: [{ nome: 'Camila Rocha' }, { nome: 'Pedro Rocha' }] }, { id: 'b', numero: '105', bloco: 'A', moradores: [{ nome: 'Lucas Pereira' }] }, { id: 'c', numero: '804', bloco: 'B', moradores: [{ nome: 'Ana Souza' }, { nome: 'Caio Souza' }] }]
 const demoResidents: Resident[] = [{ id: '1', numeroUsuario: '100302', nome: 'Camila Rocha', email: 'camila@email.com', emailContato: 'camila@email.com', telefone: '5511999990302', perfil: 'condomino', unidadeId: 'a', unidade: { numero: '302', bloco: 'A' } }, { id: '2', numeroUsuario: '100105', nome: 'Lucas Pereira', email: 'lucas@email.com', emailContato: 'lucas@email.com', telefone: '5511999990105', perfil: 'condomino', unidadeId: 'b', unidade: { numero: '105', bloco: 'A' } }, { id: '3', numeroUsuario: '100804', nome: 'Ana Souza', email: 'ana@email.com', emailContato: 'ana@email.com', telefone: '5511999990804', perfil: 'condomino', unidadeId: 'c', unidade: { numero: '804', bloco: 'B' } }]
@@ -84,21 +84,79 @@ export function UsersPage() {
   const [units, setUnits] = useState<{ id: string; numero: string; bloco?: string | null }[]>(() => demo ? demoUnits.map(({ id, numero, bloco }) => ({ id, numero, bloco })) : [])
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Resident | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   useEffect(() => {
     if (demo) return
-    Promise.all([api<Resident[]>('/usuarios'), api<{ id: string; numero: string; bloco?: string | null }[]>('/unidades')]).then(([residentList, unitList]) => { setUsers(residentList); setUnits(unitList) }).catch((error: Error) => notify(error.message))
+    Promise.all([api<Resident[]>('/usuarios?incluiExcluidos=true'), api<{ id: string; numero: string; bloco?: string | null }[]>('/unidades')]).then(([residentList, unitList]) => { setUsers(residentList); setUnits(unitList) }).catch((error: Error) => notify(error.message))
   }, [demo, notify])
   const saveUser = async (data: { nome: string; emailGoogle?: string; emailContato: string; telefone?: string; perfil: string; unidadeId?: string }, id?: string) => {
     if (demo) setUsers((current) => id ? current.map((item) => item.id === id ? { ...item, ...data, email: data.emailGoogle ?? item.email, unidade: units.find((unit) => unit.id === data.unidadeId) ?? null } : item) : [...current, { ...data, id: `d${Date.now()}`, numeroUsuario: String(Math.floor(100000 + Math.random() * 900000)), email: data.emailGoogle ?? null, unidade: units.find((unit) => unit.id === data.unidadeId) ?? null }])
     else {
       await api<Resident>(id ? `/usuarios/${id}` : '/usuarios', { method: id ? 'PATCH' : 'POST', body: JSON.stringify({ ...data, perfil: data.perfil.toUpperCase() }) })
-      setUsers(await api<Resident[]>('/usuarios'))
+      setUsers(await api<Resident[]>('/usuarios?incluiExcluidos=true'))
     }
     setModalOpen(false)
     setEditing(null)
     notify(id ? 'Cadastro atualizado.' : 'Usuário cadastrado e credenciais enviadas por e-mail.')
   }
-  return <><section className="page-title-row"><div><span className="eyebrow"><i />ACESSO AO CONDOMÍNIO</span><h1>Moradores e usuários</h1><p>Perfis e unidades vinculados ao minimercado.</p></div><button className="button button-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={17} />Cadastrar usuário</button></section><section className="panel table-panel"><div className="panel-heading users-heading"><div><span className="panel-eyebrow">CADASTROS</span><h2>{users.length} usuários</h2></div></div><div className="table-scroll"><table><thead><tr><th>Nº USUÁRIO</th><th>NOME</th><th>TELEFONE</th><th>E-MAIL CONTATO</th><th>UNIDADE</th><th>PERFIL</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>{users.map((residentUser) => <tr key={residentUser.id}><td>{residentUser.numeroUsuario}</td><td><span className="table-product"><span className="avatar table-avatar">{residentUser.nome.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><strong>{residentUser.nome}</strong></span></td><td>{residentUser.telefone ?? '—'}</td><td>{residentUser.emailContato}</td><td>{residentUser.unidade ? `Apto ${residentUser.unidade.numero} · Bloco ${residentUser.unidade.bloco ?? '—'}` : 'Sem unidade'}</td><td><span className="category-label">{roleTitle(residentUser.perfil)}</span></td><td>{(actor?.perfil === 'admin' || residentUser.perfil !== 'admin') && <button className="icon-button row-action" aria-label={`Editar cadastro de ${residentUser.nome}`} onClick={() => { setEditing(residentUser); setModalOpen(true) }}><Pencil size={14} /></button>}</td></tr>)}</tbody></table></div></section>{modalOpen && <ResidentModal initial={editing} units={units} manager={actor?.perfil === 'admin'} onClose={() => { setModalOpen(false); setEditing(null) }} onSave={saveUser} />}</>
+  const archiveUser = async (residentUser: Resident) => {
+    if (residentUser.id === actor?.id || residentUser.perfil === 'admin' && actor?.perfil !== 'admin') return
+    if (!window.confirm(`Excluir o usuário ${residentUser.nome}? Os dados serão preservados e poderão ser restaurados.`)) return
+    if (demo) setUsers((current) => current.map((item) => item.id === residentUser.id ? { ...item, excluidoEm: new Date().toISOString() } : item))
+    else {
+      await api<void>(`/usuarios/${residentUser.id}`, { method: 'DELETE' })
+      setUsers((current) => current.map((item) => item.id === residentUser.id ? { ...item, excluidoEm: new Date().toISOString() } : item))
+    }
+    notify('Usuário excluído. Os dados foram preservados e podem ser restaurados.')
+  }
+  const restoreUser = async (residentUser: Resident) => {
+    if (residentUser.perfil === 'admin' && actor?.perfil !== 'admin') return
+    if (demo) setUsers((current) => current.map((item) => item.id === residentUser.id ? { ...item, excluidoEm: null } : item))
+    else {
+      await api<void>(`/usuarios/${residentUser.id}/restaurar`, { method: 'POST' })
+      setUsers((current) => current.map((item) => item.id === residentUser.id ? { ...item, excluidoEm: null } : item))
+    }
+    notify('Usuário restaurado.')
+  }
+  const visibleUsers = users.filter((residentUser) => showArchived ? Boolean(residentUser.excluidoEm) : !residentUser.excluidoEm)
+  const canManageUser = (residentUser: Resident) => residentUser.id !== actor?.id && (actor?.perfil === 'admin' || residentUser.perfil !== 'admin')
+  return <>
+    <section className="page-title-row">
+      <div><span className="eyebrow"><i />ACESSO AO CONDOMÍNIO</span><h1>Moradores e usuários</h1><p>Perfis e unidades vinculados ao minimercado.</p></div>
+      <button className="button button-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={17} />Cadastrar usuário</button>
+    </section>
+    <section className="panel table-panel">
+      <div className="panel-heading users-heading">
+        <div><span className="panel-eyebrow">{showArchived ? 'USUÁRIOS EXCLUÍDOS' : 'CADASTROS ATIVOS'}</span><h2>{visibleUsers.length} usuários</h2></div>
+        <button className="button button-secondary" onClick={() => setShowArchived((current) => !current)}>
+          {showArchived ? <UsersRound size={16} /> : <ArchiveRestore size={16} />}
+          {showArchived ? 'Ver ativos' : `Ver excluídos (${users.filter((residentUser) => residentUser.excluidoEm).length})`}
+        </button>
+      </div>
+      <div className="table-scroll">
+        <table><thead><tr><th>Nº USUÁRIO</th><th>NOME</th><th>TELEFONE</th><th>E-MAIL CONTATO</th><th>UNIDADE</th><th>PERFIL</th><th><span className="sr-only">Ações</span></th></tr></thead>
+          <tbody>{visibleUsers.map((residentUser) => <tr key={residentUser.id}>
+            <td>{residentUser.numeroUsuario}</td>
+            <td><span className="table-product"><span className="avatar table-avatar">{residentUser.nome.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><strong>{residentUser.nome}</strong></span></td>
+            <td>{residentUser.telefone ?? '—'}</td>
+            <td>{residentUser.emailContato}</td>
+            <td>{residentUser.unidade ? `Apto ${residentUser.unidade.numero} · Bloco ${residentUser.unidade.bloco ?? '—'}` : 'Sem unidade'}</td>
+            <td><span className="category-label">{roleTitle(residentUser.perfil)}</span></td>
+            <td><div className="row-actions">
+              {residentUser.excluidoEm
+                ? canManageUser(residentUser) && <button className="icon-button row-action" aria-label={`Restaurar cadastro de ${residentUser.nome}`} title="Restaurar usuário" onClick={() => { void restoreUser(residentUser).catch((error: Error) => notify(error.message)) }}><RotateCcw size={14} /></button>
+                : canManageUser(residentUser) && <>
+                  <button className="icon-button row-action" aria-label={`Editar cadastro de ${residentUser.nome}`} onClick={() => { setEditing(residentUser); setModalOpen(true) }}><Pencil size={14} /></button>
+                  <button className="icon-button row-action" aria-label={`Excluir cadastro de ${residentUser.nome}`} title="Excluir usuário" onClick={() => { void archiveUser(residentUser).catch((error: Error) => notify(error.message)) }}><Trash2 size={14} /></button>
+                </>}
+            </div></td>
+          </tr>)}</tbody>
+        </table>
+        {visibleUsers.length === 0 && <div className="empty-state">{showArchived ? 'Nenhum usuário excluído.' : 'Nenhum usuário ativo.'}</div>}
+      </div>
+    </section>
+    {modalOpen && <ResidentModal initial={editing} units={units} manager={actor?.perfil === 'admin'} onClose={() => { setModalOpen(false); setEditing(null) }} onSave={saveUser} />}
+  </>
 }
 
 function UnitModal({ initial, onClose, onSave }: { initial: Unit | null; onClose: () => void; onSave: (data: { numero: string; bloco?: string }, id?: string) => Promise<void> }) {

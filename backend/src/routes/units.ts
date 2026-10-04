@@ -9,7 +9,7 @@ export const unitsRouter = Router()
 const unitSchema = z.object({ numero: z.string().trim().min(1).max(20), bloco: z.string().trim().max(20).optional() })
 
 unitsRouter.get('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (_req, res) => {
-  const units = await prisma.unidade.findMany({ include: { moradores: { select: { id: true, nome: true, email: true } }, _count: { select: { compras: true } } }, orderBy: [{ bloco: 'asc' }, { numero: 'asc' }] })
+  const units = await prisma.unidade.findMany({ include: { moradores: { where: { excluidoEm: null }, select: { id: true, nome: true, email: true } }, _count: { select: { compras: true } } }, orderBy: [{ bloco: 'asc' }, { numero: 'asc' }] })
   return res.json(units)
 }))
 

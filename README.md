@@ -122,6 +122,8 @@ Cadastro local usa número de usuário de seis dígitos e senha temporária; a s
 
 As permissões são verificadas no backend e também refletidas nas rotas da interface. A aplicação inclui controles de alto contraste e aumento de fonte, navegação por teclado, rótulos para leitores de tela, tabelas semânticas e respeito à preferência por movimento reduzido.
 
+Administradores e síndicos podem excluir usuários logicamente e restaurá-los pela tela de usuários. Os registros e o histórico de compras permanecem armazenados; usuários excluídos não podem iniciar sessão.
+
 ## Dados de demonstração
 
 A tela de login oferece um modo de demonstração com perfis e dados fictícios, incluindo os usuários Marina Costa, Rafael Almeida e Camila Rocha, produtos de exemplo e compras simuladas. Alterações feitas nesse modo ficam apenas na interface e não são gravadas no PostgreSQL.

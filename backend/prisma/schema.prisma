@@ -31,6 +31,7 @@ model Usuario {
   unidadeId             String?
   unidade               Unidade?  @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
   compras               Compra[]
+  excluidoEm            DateTime?
   criadoEm              DateTime  @default(now())
   atualizadoEm          DateTime  @updatedAt
 }

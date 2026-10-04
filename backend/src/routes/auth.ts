@@ -21,7 +21,7 @@ export function configurePassport() {
 
   passport.serializeUser((user, done) => done(null, (user as Express.User).id))
   passport.deserializeUser((id: string, done) => {
-    prisma.usuario.findUnique({ where: { id }, include: { unidade: true } })
+    prisma.usuario.findFirst({ where: { id, excluidoEm: null }, include: { unidade: true } })
       .then((user) => done(null, user ?? false))
       .catch((error: unknown) => done(error))
   })
@@ -41,6 +41,7 @@ export function configurePassport() {
       if (!email) return done(null, false)
 
       let user = await prisma.usuario.findUnique({ where: { email } })
+      if (user?.excluidoEm) return done(null, false)
       if (!user && (ADMIN_EMAILS ?? '').split(',').map((value) => value.trim().toLowerCase()).includes(email)) {
         user = await prisma.usuario.create({ data: { numeroUsuario: await createUserNumber(prisma), email, emailContato: email, nome: profile.displayName, googleId: profile.id, perfil: Perfil.ADMIN, deveTrocarSenha: true } })
       } else if (user && !user.googleId) {
@@ -75,7 +76,7 @@ authRouter.post('/login', asyncHandler(async (req, res, next) => {
   const { identificador, senha } = z.object({ identificador: z.string().trim().min(1), senha: z.string().min(1) }).parse(req.body)
   const normalizedPhone = normalizePhone(identificador)
   const user = await prisma.usuario.findFirst({
-    where: { OR: [{ numeroUsuario: identificador }, { telefone: normalizedPhone }], senhaHash: { not: null } },
+    where: { OR: [{ numeroUsuario: identificador }, { telefone: normalizedPhone }], senhaHash: { not: null }, excluidoEm: null },
   })
   if (!user?.senhaHash || !await bcrypt.compare(senha, user.senhaHash)) return res.status(401).json({ error: 'Número/telefone ou senha inválidos.' })
 
@@ -101,7 +102,7 @@ authRouter.post('/alterar-senha', requireAuth, asyncHandler(async (req, res) => 
 authRouter.post('/solicitar-recuperacao', asyncHandler(async (req, res) => {
   const { identificador } = z.object({ identificador: z.string().trim().min(1) }).parse(req.body)
   const user = await prisma.usuario.findFirst({
-    where: { OR: [{ numeroUsuario: identificador }, { emailContato: identificador.toLowerCase() }, { telefone: normalizePhone(identificador) }] },
+    where: { OR: [{ numeroUsuario: identificador }, { emailContato: identificador.toLowerCase() }, { telefone: normalizePhone(identificador) }], excluidoEm: null },
   })
   if (!user) return res.status(404).json({ error: 'Nenhum usuário encontrado para esse identificador.' })
   const token = randomBytes(24).toString('hex')
@@ -116,7 +117,7 @@ authRouter.post('/solicitar-recuperacao', asyncHandler(async (req, res) => {
 
 authRouter.post('/redefinir-senha', asyncHandler(async (req, res) => {
   const { token, novaSenha } = z.object({ token: z.string().trim().min(16), novaSenha: z.string().min(10).max(128) }).parse(req.body)
-  const user = await prisma.usuario.findFirst({ where: { resetToken: token, resetTokenExpiresAt: { gt: new Date() } } })
+  const user = await prisma.usuario.findFirst({ where: { resetToken: token, resetTokenExpiresAt: { gt: new Date() }, excluidoEm: null } })
   if (!user) return res.status(400).json({ error: 'Token inválido ou expirado.' })
   await prisma.usuario.update({
     where: { id: user.id },

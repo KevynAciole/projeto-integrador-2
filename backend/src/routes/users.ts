@@ -34,8 +34,15 @@ const updateSchema = z.object({
 })
 
 usersRouter.get('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (_req, res) => {
-  const users = await prisma.usuario.findMany({ include: { unidade: true }, orderBy: { nome: 'asc' } })
-  return res.json(users.map(({ id, numeroUsuario, email, emailContato, telefone, nome, perfil, unidadeId, unidade, deveTrocarSenha }) => ({ id, numeroUsuario, email, emailContato, telefone, nome, perfil: perfil.toLowerCase(), unidadeId, unidade, deveTrocarSenha })))
+  const incluiExcluidos = _req.query.incluiExcluidos === 'true'
+  const users = await prisma.usuario.findMany({
+    where: incluiExcluidos ? {} : { excluidoEm: null },
+    include: { unidade: true },
+    orderBy: { nome: 'asc' },
+  })
+  return res.json(users.map(({ id, numeroUsuario, email, emailContato, telefone, nome, perfil, unidadeId, unidade, deveTrocarSenha, excluidoEm }) => ({
+    id, numeroUsuario, email, emailContato, telefone, nome, perfil: perfil.toLowerCase(), unidadeId, unidade, deveTrocarSenha, excluidoEm,
+  })))
 }))
 
 usersRouter.post('/auto-inscricao', asyncHandler(async (req, res) => {
@@ -114,4 +121,52 @@ usersRouter.patch('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler
   const unitUpdate = unidadeId === undefined ? {} : unidadeId ? { unidade: { connect: { id: unidadeId } } } : { unidade: { disconnect: true } }
   const user = await prisma.usuario.update({ where: { id }, data: { ...userFields, ...unitUpdate } })
   return res.json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email, emailContato: user.emailContato, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha })
+}))
+
+usersRouter.delete('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
+  const actor = req.user as AuthUser
+  const id = z.string().parse(req.params.id)
+  if (actor.id === id) return res.status(400).json({ error: 'Você não pode excluir seu próprio usuário.' })
+
+  const target = await prisma.usuario.findUnique({ where: { id } })
+  if (!target || target.excluidoEm) return res.status(404).json({ error: 'Usuário ativo não encontrado.' })
+  if (actor.perfil === Perfil.SINDICO && target.perfil === Perfil.ADMIN) return res.status(403).json({ error: 'Síndicos não podem excluir administradores.' })
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.usuario.update({ where: { id }, data: { excluidoEm: new Date() } })
+    await transaction.auditoria.create({
+      data: {
+        acao: 'EXCLUIR_USUARIO',
+        detalhes: `Usuário ${target.nome} excluído logicamente.`,
+        usuarioId: actor.id,
+        usuarioNome: actor.nome,
+        ipAddress: req.ip ?? undefined,
+      },
+    })
+  })
+
+  return res.status(204).end()
+}))
+
+usersRouter.post('/:id/restaurar', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
+  const actor = req.user as AuthUser
+  const id = z.string().parse(req.params.id)
+  const target = await prisma.usuario.findUnique({ where: { id } })
+  if (!target || !target.excluidoEm) return res.status(404).json({ error: 'Usuário excluído não encontrado.' })
+  if (actor.perfil === Perfil.SINDICO && target.perfil === Perfil.ADMIN) return res.status(403).json({ error: 'Síndicos não podem restaurar administradores.' })
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.usuario.update({ where: { id }, data: { excluidoEm: null } })
+    await transaction.auditoria.create({
+      data: {
+        acao: 'RESTAURAR_USUARIO',
+        detalhes: `Usuário ${target.nome} restaurado.`,
+        usuarioId: actor.id,
+        usuarioNome: actor.nome,
+        ipAddress: req.ip ?? undefined,
+      },
+    })
+  })
+
+  return res.status(204).end()
 }))
