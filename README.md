@@ -124,6 +124,8 @@ As permissões são verificadas no backend e também refletidas nas rotas da int
 
 Administradores e síndicos podem excluir usuários logicamente e restaurá-los pela tela de usuários. Os registros e o histórico de compras permanecem armazenados; usuários excluídos não podem iniciar sessão.
 
+Consulte [docs/jornada-perfis.md](docs/jornada-perfis.md) para conhecer a jornada e as permissões detalhadas de cada perfil.
+
 ## Dados de demonstração
 
 A tela de login oferece um modo de demonstração com perfis e dados fictícios, incluindo os usuários Marina Costa, Rafael Almeida e Camila Rocha, produtos de exemplo e compras simuladas. Alterações feitas nesse modo ficam apenas na interface e não são gravadas no PostgreSQL.
