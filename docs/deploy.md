@@ -14,8 +14,9 @@ Use um segredo aleatório forte em `SESSION_SECRET`; nunca o versione. Configure
 
 1. Importe o mesmo repositório na Vercel, com raiz do projeto na raiz do monorepo.
 2. `vercel.json` configura o build do workspace frontend, `frontend/dist` como saída e fallback SPA.
-3. Configure `VITE_API_URL` com o domínio HTTPS público do serviço Railway, sem barra final.
-4. Atualize no Railway `CLIENT_URL` e `CORS_ORIGIN` para o domínio Vercel definitivo.
-5. No cliente OAuth Google, cadastre a origem Vercel em *Authorized JavaScript origins* e a URL Railway em *Authorized redirect URIs*.
+3. O frontend declara os bindings nativos Linux do Rolldown e do Lightning CSS como dependências opcionais para o build Linux da Vercel.
+4. Configure `VITE_API_URL` com o domínio HTTPS público do serviço Railway, sem barra final.
+5. Atualize no Railway `CLIENT_URL` e `CORS_ORIGIN` para o domínio Vercel definitivo.
+6. No cliente OAuth Google, cadastre a origem Vercel em *Authorized JavaScript origins* e a URL Railway em *Authorized redirect URIs*.
 
 Depois do deploy, valide o login, um GET autenticado de estoque, a compra de um item e o relatório do mês. Em produção, cookies cross-site exigem HTTPS (`SameSite=None; Secure`), já configurado quando `NODE_ENV=production`.
