@@ -24,8 +24,8 @@ registrationRouter.post('/', asyncHandler(async (req, res) => {
     const created = await transaction.usuario.create({
       data: {
         numeroUsuario: await createUserNumber(transaction),
-        email: data.emailGoogle ?? data.emailContato,
-        emailContato: data.emailContato,
+        email: data.email,
+        emailContato: data.email,
         telefone: data.telefone ?? null,
         senhaHash: await bcrypt.hash(senhaTemporaria, 12),
         deveTrocarSenha: true,
@@ -42,7 +42,6 @@ registrationRouter.post('/', asyncHandler(async (req, res) => {
     id: user.id,
     numeroUsuario: user.numeroUsuario,
     email: user.email,
-    emailContato: user.emailContato,
     telefone: user.telefone,
     nome: user.nome,
     perfil: user.perfil.toLowerCase(),

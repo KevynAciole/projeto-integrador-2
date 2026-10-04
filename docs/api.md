@@ -31,3 +31,5 @@ As rotas abaixo exigem sessão autenticada, salvo `/health`, `/auth/google`, `/a
 | `GET` | `/relatorios?mes=6&ano=2026` | administrador, síndico | Totalizadores mensais por unidade |
 
 Corpos de escrita são validados com Zod. A API retorna `400` para dados inválidos, `401` sem sessão, `403` para perfil não autorizado, `404` para registro inexistente e `409` para estoque insuficiente ou conflito de cadastro.
+
+O cadastro e a atualização de usuários recebem um único campo `email`; esse endereço é usado para enviar credenciais e como e-mail da conta Google. O backend mantém os campos internos legados sincronizados para compatibilidade com o banco existente.

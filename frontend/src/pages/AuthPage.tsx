@@ -125,7 +125,7 @@ export function LoginPage() {
     setError('')
     setInfo('')
     try {
-      await selfRegisterCondomino({ nome: selfName, emailContato: selfEmail, telefone: selfPhone, unidadeId: selfUnit })
+      await selfRegisterCondomino({ nome: selfName, email: selfEmail, telefone: selfPhone, unidadeId: selfUnit })
       setInfo('Solicitação enviada. Você receberá as instruções de acesso no e-mail cadastrado.')
       setView('login')
       setSelfName('')
@@ -195,7 +195,7 @@ export function LoginPage() {
             </div>
             {registerStep === 1 && <form className="local-login auth-flow-form" onSubmit={(event) => { event.preventDefault(); setRegisterStep(2); setError('') }}>
               <label>Nome completo<input autoComplete="name" required minLength={2} value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Ex.: Ana Souza" /></label>
-              <label>E-mail de contato<input autoComplete="email" required type="email" value={selfEmail} onChange={(event) => setSelfEmail(event.target.value)} placeholder="voce@exemplo.com" /></label>
+              <label>E-mail (login Google e recebimento das credenciais)<input autoComplete="email" required type="email" value={selfEmail} onChange={(event) => setSelfEmail(event.target.value)} placeholder="voce@exemplo.com" /></label>
               <label>Telefone<input autoComplete="tel" required inputMode="tel" value={selfPhone} onChange={(event) => setSelfPhone(event.target.value)} placeholder="(11) 99999-0000" /></label>
               <button className="button button-primary demo-button">Continuar</button>
             </form>}

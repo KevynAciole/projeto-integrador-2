@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const enterDemo = (perfil: Role) => {
     const nomes: Record<Role, string> = { admin: 'Marina Costa', sindico: 'Rafael Almeida', estoquista: 'Lucas Martins', condomino: 'Camila Rocha', visitante: 'Visitante' }
     setDemo(true)
-    setUser({ id: 'demo', numeroUsuario: '000001', nome: nomes[perfil], email: 'demo@mercadodopatio.com.br', emailContato: 'demo@mercadodopatio.com.br', perfil, unidadeId: perfil === 'condomino' ? 'unidade-demo' : null, deveTrocarSenha: false, senhaConfigurada: true })
+    setUser({ id: 'demo', numeroUsuario: '000001', nome: nomes[perfil], email: 'demo@mercadodopatio.com.br', perfil, unidadeId: perfil === 'condomino' ? 'unidade-demo' : null, deveTrocarSenha: false, senhaConfigurada: true })
   }
 
   const signIn = async (identificador: string, senha: string) => {
@@ -61,10 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!response.ok) throw new Error(data.error ?? 'Não foi possível redefinir a senha.')
   }
 
-  const selfRegisterCondomino = async (data: { nome: string; emailContato: string; telefone: string; unidadeId: string }) => {
+  const selfRegisterCondomino = async (data: { nome: string; email: string; telefone: string; unidadeId: string }) => {
     const response = await fetch(`${API_URL}/inscricao`, {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: data.nome, perfil: 'condomino', emailContato: data.emailContato, emailGoogle: data.emailContato, telefone: data.telefone, unidadeId: data.unidadeId }),
+      body: JSON.stringify({ nome: data.nome, perfil: 'condomino', email: data.email, telefone: data.telefone, unidadeId: data.unidadeId }),
     })
     const body = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(body.error ?? 'Não foi possível concluir o cadastro.')

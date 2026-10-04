@@ -12,7 +12,7 @@ export const usersRouter = Router()
 const updateSchema = z.object({
   nome: z.string().trim().min(2).max(120).optional(),
   perfil: z.nativeEnum(Perfil).optional(),
-  emailContato: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
   telefone: z.string().trim().optional().transform((value) => value ? normalizePhone(value) : undefined),
   unidadeId: z.string().trim().min(1).nullable().optional(),
 })
@@ -25,7 +25,7 @@ usersRouter.get('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(asyn
     orderBy: { nome: 'asc' },
   })
   return res.json(users.map(({ id, numeroUsuario, email, emailContato, telefone, nome, perfil, unidadeId, unidade, deveTrocarSenha, excluidoEm }) => ({
-    id, numeroUsuario, email, emailContato, telefone, nome, perfil: perfil.toLowerCase(), unidadeId, unidade, deveTrocarSenha, excluidoEm,
+    id, numeroUsuario, email: email ?? emailContato, telefone, nome, perfil: perfil.toLowerCase(), unidadeId, unidade, deveTrocarSenha, excluidoEm,
   })))
 }))
 
@@ -39,8 +39,8 @@ usersRouter.post('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(asy
     const created = await transaction.usuario.create({
       data: {
         numeroUsuario: await createUserNumber(transaction),
-        email: data.emailGoogle ?? null,
-        emailContato: data.emailContato,
+        email: data.email,
+        emailContato: data.email,
         telefone: data.telefone ?? null,
         senhaHash: await bcrypt.hash(senhaTemporaria, 12),
         deveTrocarSenha: true,
@@ -63,7 +63,7 @@ usersRouter.post('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(asy
     },
   })
 
-  return res.status(201).json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email, emailContato: user.emailContato, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha, notificacaoEnviada: true })
+  return res.status(201).json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha, notificacaoEnviada: true })
 }))
 
 usersRouter.patch('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
@@ -74,13 +74,17 @@ usersRouter.patch('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler
   if (actor.perfil === Perfil.SINDICO && (target.perfil === Perfil.ADMIN || data.perfil === Perfil.ADMIN)) return res.status(403).json({ error: 'Síndicos não podem alterar administradores.' })
   const nextProfile = data.perfil ?? target.perfil
   const nextUnit = data.unidadeId === undefined ? target.unidadeId : data.unidadeId
-  if (nextProfile === Perfil.CONDOMINO && (!target.email || !(data.telefone ?? target.telefone) || !nextUnit)) return res.status(400).json({ error: 'Condôminos precisam de e-mail Google, telefone e unidade.' })
+  const nextEmail = data.email ?? target.email ?? target.emailContato
+  if (nextProfile === Perfil.CONDOMINO && (!nextEmail || !(data.telefone ?? target.telefone) || !nextUnit)) return res.status(400).json({ error: 'Condôminos precisam de e-mail, telefone e unidade.' })
   if (nextProfile === Perfil.VISITANTE && nextUnit) return res.status(400).json({ error: 'Visitantes não podem ser vinculados a uma unidade.' })
 
-  const { unidadeId, ...userFields } = data
+  const { unidadeId, email, ...userFields } = data
   const unitUpdate = unidadeId === undefined ? {} : unidadeId ? { unidade: { connect: { id: unidadeId } } } : { unidade: { disconnect: true } }
-  const user = await prisma.usuario.update({ where: { id }, data: { ...userFields, ...unitUpdate } })
-  return res.json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email, emailContato: user.emailContato, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha })
+  const user = await prisma.usuario.update({
+    where: { id },
+    data: { ...userFields, ...(email !== undefined ? { email, emailContato: email } : {}), ...unitUpdate },
+  })
+  return res.json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email ?? user.emailContato, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha })
 }))
 
 usersRouter.delete('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
@@ -134,13 +138,11 @@ usersRouter.post('/:id/restaurar', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asy
 export const createUserSchema = z.object({
   nome: z.string().trim().min(2).max(120),
   perfil: z.nativeEnum(Perfil),
-  emailGoogle: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
-  emailContato: z.string().trim().email().transform((value) => value.toLowerCase()),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
   telefone: z.string().trim().optional().transform((value) => value ? normalizePhone(value) : undefined),
   unidadeId: z.string().optional(),
 }).superRefine((data, context) => {
   if (data.perfil === Perfil.CONDOMINO) {
-    if (!data.emailGoogle) context.addIssue({ code: z.ZodIssueCode.custom, path: ['emailGoogle'], message: 'Condôminos precisam de uma conta Google.' })
     if (!data.telefone || data.telefone.length < 10 || data.telefone.length > 15) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone válido para o condômino.' })
     if (!data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Condôminos devem estar vinculados a uma unidade.' })
   }

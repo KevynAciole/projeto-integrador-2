@@ -112,13 +112,13 @@ No Resend, crie uma API key e verifique o domínio remetente para enviar e-mails
 
 ## Perfis e acessibilidade
 
-- **Administrador:** todos os acessos; gerencia usuários, produtos, unidades, compras e relatórios. Pode existir sem Google.
-- **Síndico:** pode comprar, consulta relatórios/compras, gerencia unidades e cadastra usuários exceto administradores. Pode existir sem Google.
-- **Gestor de Estoque:** administra produtos, pode comprar e consulta suas próprias compras; unidade e Google opcionais.
+- **Administrador:** todos os acessos; gerencia usuários, produtos, unidades, compras e relatórios. Pode usar senha local sem vincular login Google.
+- **Síndico:** pode comprar, consulta relatórios/compras, gerencia unidades e cadastra usuários exceto administradores. Pode usar senha local sem vincular login Google.
+- **Gestor de Estoque:** administra produtos, pode comprar e consulta suas próprias compras; unidade e login Google opcionais.
 - **Condômino:** exige conta Google, telefone e unidade; consulta suas compras e pode comprar.
 - **Visitante:** consulta produtos e preços; não pode comprar nem acessar usuários/unidades.
 
-Cadastro local usa número de usuário de seis dígitos e senha temporária; a senha precisa ser trocada no primeiro acesso. O e-mail de contato recebe as credenciais pelo Resend. Configure a API key e verifique o domínio remetente antes de cadastrar contas reais. Login aceita número de usuário ou telefone com senha; Google continua disponível quando vinculado.
+Todo usuário tem um único e-mail cadastrado, usado tanto para receber credenciais pelo Resend quanto para identificar a conta no login Google. O login local continua disponível com número de usuário ou telefone e senha. Cadastro local usa número de usuário de seis dígitos e senha temporária; a senha precisa ser trocada no primeiro acesso. Configure a API key e verifique o domínio remetente antes de cadastrar contas reais.
 
 As permissões são verificadas no backend e também refletidas nas rotas da interface. A aplicação inclui controles de alto contraste e aumento de fonte, navegação por teclado, rótulos para leitores de tela, tabelas semânticas e respeito à preferência por movimento reduzido.
 

@@ -102,7 +102,7 @@ authRouter.post('/alterar-senha', requireAuth, asyncHandler(async (req, res) => 
 authRouter.post('/solicitar-recuperacao', asyncHandler(async (req, res) => {
   const { identificador } = z.object({ identificador: z.string().trim().min(1) }).parse(req.body)
   const user = await prisma.usuario.findFirst({
-    where: { OR: [{ numeroUsuario: identificador }, { emailContato: identificador.toLowerCase() }, { telefone: normalizePhone(identificador) }], excluidoEm: null },
+    where: { OR: [{ numeroUsuario: identificador }, { email: identificador.toLowerCase() }, { emailContato: identificador.toLowerCase() }, { telefone: normalizePhone(identificador) }], excluidoEm: null },
   })
   if (!user) return res.status(404).json({ error: 'Nenhum usuário encontrado para esse identificador.' })
   const token = randomBytes(24).toString('hex')
@@ -144,5 +144,5 @@ authRouter.post('/logout', (req, res, next) => {
 })
 
 function toPublicUser(user: Pick<AuthUser, 'id' | 'numeroUsuario' | 'nome' | 'email' | 'emailContato' | 'telefone' | 'perfil' | 'unidadeId' | 'deveTrocarSenha'> & { senhaHash?: string | null }) {
-  return { id: user.id, numeroUsuario: user.numeroUsuario, nome: user.nome, email: user.email, emailContato: user.emailContato, telefone: user.telefone, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha, senhaConfigurada: Boolean(user.senhaHash) }
+return { id: user.id, numeroUsuario: user.numeroUsuario, nome: user.nome, email: user.email ?? user.emailContato, telefone: user.telefone, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha, senhaConfigurada: Boolean(user.senhaHash) }
 }

@@ -21,6 +21,7 @@ jest.mock('../lib/mail', () => ({
 const app = express()
 app.use(express.json())
 app.use('/inscricao', registrationRouter)
+const createUser = jest.fn()
 
 describe('autoinscrição pública', () => {
   const createdUser = {
@@ -37,11 +38,12 @@ describe('autoinscrição pública', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    createUser.mockResolvedValue(createdUser)
     ;(prisma.unidade.findMany as jest.Mock).mockResolvedValue([{ id: 'unit-1', numero: '101', bloco: 'A' }])
     ;(prisma.$transaction as jest.Mock).mockImplementation((callback: (transaction: object) => Promise<unknown>) => callback({
       usuario: {
         findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue(createdUser),
+        create: createUser,
       },
     }))
     ;(sendTemporaryCredentials as jest.Mock).mockResolvedValue(undefined)
@@ -60,14 +62,16 @@ describe('autoinscrição pública', () => {
   it('permite solicitar cadastro público e envia credenciais', async () => {
     const response = await request(app).post('/inscricao').send({
       nome: 'Pessoa Exemplo',
-      emailContato: 'pessoa@example.com',
-      emailGoogle: 'pessoa@example.com',
+      email: 'pessoa@example.com',
       telefone: '(11) 99999-9999',
       unidadeId: 'unit-1',
     })
 
     expect(response.status).toBe(201)
     expect(response.body).toMatchObject({ id: 'user-1', unidadeId: 'unit-1', notificacaoEnviada: true })
+    expect(createUser).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ email: 'pessoa@example.com', emailContato: 'pessoa@example.com' }),
+    }))
     expect(sendTemporaryCredentials).toHaveBeenCalledWith(expect.objectContaining({
       to: 'pessoa@example.com',
       nome: 'Pessoa Exemplo',
