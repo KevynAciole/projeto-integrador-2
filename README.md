@@ -86,14 +86,16 @@ O modelo completo está em `.env.example`. Os valores de exemplo servem somente 
 | `GOOGLE_CALLBACK_URL` | URL pública da API terminando em `/auth/google/callback` |
 | `SESSION_SECRET` | `<string-secreta>` aleatória e forte, com mais de 32 caracteres |
 | `ADMIN_EMAILS` | E-mails Google de administradores iniciais, separados por vírgula |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Servidor SMTP para enviar número de usuário e senha temporária |
-| `SMTP_SECURE`, `SMTP_FROM` | TLS SMTP e remetente das mensagens de acesso |
+| `RESEND_API_KEY` | Chave de API do Resend para envio de e-mails transacionais |
+| `RESEND_FROM` | Remetente autorizado no Resend, por exemplo `Minimercado <acesso@seudominio.com>` |
 | `PORT` | Porta da API; padrão local `3000` |
 | `CLIENT_URL` | Origem do frontend; local `http://localhost:5173` |
 | `CORS_ORIGIN` | Origem(ns) autorizada(s) para chamadas com cookie |
 | `VITE_API_URL` | URL pública da API; local pode ficar vazio, em produção use o domínio Railway |
 
 No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada e a URL configurada em `GOOGLE_CALLBACK_URL` como URI de redirecionamento autorizado.
+
+No Resend, crie uma API key e verifique o domínio remetente para enviar e-mails aos usuários. O remetente de teste `onboarding@resend.dev` só pode ser usado com destinatários autorizados pela conta Resend.
 
 ## Scripts
 
@@ -116,7 +118,7 @@ No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada
 - **Condômino:** exige conta Google, telefone e unidade; consulta suas compras e pode comprar.
 - **Visitante:** consulta produtos e preços; não pode comprar nem acessar usuários/unidades.
 
-Cadastro local usa número de usuário de seis dígitos e senha temporária; a senha precisa ser trocada no primeiro acesso. O e-mail de contato recebe as credenciais. Configure SMTP antes de cadastrar contas reais. Login aceita número de usuário ou telefone com senha; Google continua disponível quando vinculado.
+Cadastro local usa número de usuário de seis dígitos e senha temporária; a senha precisa ser trocada no primeiro acesso. O e-mail de contato recebe as credenciais pelo Resend. Configure a API key e verifique o domínio remetente antes de cadastrar contas reais. Login aceita número de usuário ou telefone com senha; Google continua disponível quando vinculado.
 
 As permissões são verificadas no backend e também refletidas nas rotas da interface. A aplicação inclui controles de alto contraste e aumento de fonte, navegação por teclado, rótulos para leitores de tela, tabelas semânticas e respeito à preferência por movimento reduzido.
 
@@ -134,7 +136,7 @@ Com a API em execução, Swagger UI está disponível em [`http://localhost:3000
 
 - Nunca publique arquivos `.env`. O `.gitignore` já os exclui e mantém `.env.example` como modelo sem segredos.
 - Não versione credenciais, chaves privadas, certificados, dumps de banco ou dados pessoais. Revise `git status` antes de cada commit.
-- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `VITE_API_URL` e credenciais SMTP diretamente nas configurações protegidas do serviço de hospedagem.
+- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `VITE_API_URL`, `RESEND_API_KEY` e `RESEND_FROM` diretamente nas configurações protegidas do serviço de hospedagem.
 - Use HTTPS em produção e um `SESSION_SECRET` exclusivo e aleatório. Não reutilize os valores de exemplo.
 - Revise logs e mensagens de erro para garantir que tokens, cookies, credenciais e dados pessoais não sejam registrados.
 - No Railway, aplique migrações com `prisma migrate deploy`; na Vercel, configure `VITE_API_URL` com o domínio público da API Railway.
