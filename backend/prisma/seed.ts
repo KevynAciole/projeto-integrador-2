@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import { Perfil, PrismaClient } from '@prisma/client'
+import { createUserNumber } from '../src/lib/accounts'
 
 dotenv.config()
 dotenv.config({ path: '../.env' })
@@ -13,11 +14,11 @@ async function main() {
   for (const email of emails) {
     await prisma.usuario.upsert({
       where: { email },
-      update: { perfil: Perfil.GESTOR },
-      create: { email, nome: email.split('@')[0].replace(/[._-]/g, ' '), perfil: Perfil.GESTOR },
+      update: { perfil: Perfil.ADMIN, emailContato: email },
+      create: { numeroUsuario: await createUserNumber(prisma), email, emailContato: email, nome: email.split('@')[0].replace(/[._-]/g, ' '), perfil: Perfil.ADMIN, deveTrocarSenha: true },
     })
   }
-  console.log(`${emails.length} gestor(es) inicial(is) configurado(s).`)
+  console.log(`${emails.length} administrador(es) inicial(is) configurado(s).`)
 }
 
 main().finally(() => prisma.$disconnect())

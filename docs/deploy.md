@@ -4,7 +4,7 @@
 
 1. Crie um projeto Railway com serviço PostgreSQL e serviço Node conectado ao repositório.
 2. Mantenha a raiz do repositório como diretório do serviço. `railway.json` define build, migração, comando de start e health check.
-3. Configure as variáveis `DATABASE_URL` (referência interna do PostgreSQL Railway), `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `ADMIN_EMAILS`, `CLIENT_URL` e `CORS_ORIGIN`.
+3. Configure as variáveis `DATABASE_URL` (referência interna do PostgreSQL Railway), `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `ADMIN_EMAILS`, `CLIENT_URL`, `CORS_ORIGIN` e `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, `SMTP_FROM`.
 4. Defina `GOOGLE_CALLBACK_URL` como `https://<dominio-api>/auth/google/callback` e autorize esse URI no cliente OAuth do Google.
 5. O comando de deploy executa `prisma migrate deploy` antes de iniciar a API. Verifique `/health` e `/api/docs` no domínio Railway.
 

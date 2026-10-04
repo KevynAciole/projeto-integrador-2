@@ -1,6 +1,6 @@
 # Gestão de Minimercado e Compras de Condôminos
 
-Sistema web para administrar o minimercado de um condomínio. Gestores controlam o catálogo e o estoque; moradores registram compras e retiradas; síndicos acompanham compras, unidades e relatórios mensais.
+Sistema web para administrar o minimercado de um condomínio. Administradores e gestores de estoque cuidam do catálogo; condôminos e funcionários registram compras; síndicos acompanham usuários, unidades e relatórios mensais.
 
 ## Tecnologias
 
@@ -52,7 +52,7 @@ Edite `.env` com os valores do seu ambiente. Para PostgreSQL local via Docker, i
 docker compose up -d
 ```
 
-Aplique a migração inicial e cadastre o(s) gestor(es) indicado(s) em `ADMIN_EMAILS`:
+Aplique as migrações e cadastre os administradores iniciais:
 
 ```bash
 npm run db:migrate --workspace @minimercado/backend -- --name init
@@ -85,7 +85,9 @@ O modelo completo está em `.env.example`. Os valores de exemplo servem somente 
 | `GOOGLE_CLIENT_SECRET` | `<sua-client-secret>` criada no Google Cloud |
 | `GOOGLE_CALLBACK_URL` | URL pública da API terminando em `/auth/google/callback` |
 | `SESSION_SECRET` | `<string-secreta>` aleatória e forte, com mais de 32 caracteres |
-| `ADMIN_EMAILS` | E-mails iniciais de gestores, separados por vírgula |
+| `ADMIN_EMAILS` | E-mails Google de administradores iniciais, separados por vírgula |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Servidor SMTP para enviar número de usuário e senha temporária |
+| `SMTP_SECURE`, `SMTP_FROM` | TLS SMTP e remetente das mensagens de acesso |
 | `PORT` | Porta da API; padrão local `3000` |
 | `CLIENT_URL` | Origem do frontend; local `http://localhost:5173` |
 | `CORS_ORIGIN` | Origem(ns) autorizada(s) para chamadas com cookie |
@@ -104,13 +106,17 @@ No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada
 | `npm run db:generate` | Gera o cliente Prisma |
 | `npm run db:migrate --workspace @minimercado/backend -- --name <nome>` | Cria/aplica migração de desenvolvimento |
 | `npm run db:deploy` | Aplica migrações pendentes em produção |
-| `npm run db:seed` | Cadastra gestores definidos em `ADMIN_EMAILS` |
+| `npm run db:seed` | Cadastra administradores definidos em `ADMIN_EMAILS` |
 
 ## Perfis e acessibilidade
 
-- **Gestor:** administra produtos e estoque, usuários, compras e relatórios.
-- **Síndico:** acompanha compras e relatórios e administra unidades e moradores.
-- **Condômino:** consulta sua unidade e seu histórico e registra compras/retiradas.
+- **Administrador:** todos os acessos; gerencia usuários, produtos, unidades, compras e relatórios. Pode existir sem Google.
+- **Síndico:** pode comprar, consulta relatórios/compras, gerencia unidades e cadastra usuários exceto administradores. Pode existir sem Google.
+- **Gestor de Estoque:** administra produtos, pode comprar e consulta suas próprias compras; unidade e Google opcionais.
+- **Condômino:** exige conta Google, telefone e unidade; consulta suas compras e pode comprar.
+- **Visitante:** consulta produtos e preços; não pode comprar nem acessar usuários/unidades.
+
+Cadastro local usa número de usuário de seis dígitos e senha temporária; a senha precisa ser trocada no primeiro acesso. O e-mail de contato recebe as credenciais. Configure SMTP antes de cadastrar contas reais. Login aceita número de usuário ou telefone com senha; Google continua disponível quando vinculado.
 
 As permissões são verificadas no backend e também refletidas nas rotas da interface. A aplicação inclui controles de alto contraste e aumento de fonte, navegação por teclado, rótulos para leitores de tela, tabelas semânticas e respeito à preferência por movimento reduzido.
 
@@ -118,7 +124,7 @@ As permissões são verificadas no backend e também refletidas nas rotas da int
 
 A tela de login oferece um modo de demonstração com perfis e dados fictícios, incluindo os usuários Marina Costa, Rafael Almeida e Camila Rocha, produtos de exemplo e compras simuladas. Alterações feitas nesse modo ficam apenas na interface e não são gravadas no PostgreSQL.
 
-O seed real (`npm run db:seed`) cria somente os gestores listados em `ADMIN_EMAILS`; não inclui produtos, unidades ou compras de teste. Antes de abrir o sistema ao público, desative ou remova a entrada de demonstração e substitua os exemplos por cadastros controlados no banco. Não use dados fictícios como dados operacionais.
+O seed real (`npm run db:seed`) cria somente os administradores listados em `ADMIN_EMAILS`; não inclui produtos, unidades ou compras de teste. O cadastro de usuário gera número de usuário e senha temporária, envia as credenciais ao e-mail de contato e força a troca da senha no primeiro acesso. Antes de abrir o sistema ao público, desative ou remova a entrada de demonstração e substitua os exemplos por cadastros controlados no banco. Não use dados fictícios como dados operacionais.
 
 ## Documentação da API
 
@@ -128,7 +134,7 @@ Com a API em execução, Swagger UI está disponível em [`http://localhost:3000
 
 - Nunca publique arquivos `.env`. O `.gitignore` já os exclui e mantém `.env.example` como modelo sem segredos.
 - Não versione credenciais, chaves privadas, certificados, dumps de banco ou dados pessoais. Revise `git status` antes de cada commit.
-- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN` e `VITE_API_URL` diretamente nas configurações protegidas do serviço de hospedagem.
+- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `VITE_API_URL` e credenciais SMTP diretamente nas configurações protegidas do serviço de hospedagem.
 - Use HTTPS em produção e um `SESSION_SECRET` exclusivo e aleatório. Não reutilize os valores de exemplo.
 - Revise logs e mensagens de erro para garantir que tokens, cookies, credenciais e dados pessoais não sejam registrados.
 - No Railway, aplique migrações com `prisma migrate deploy`; na Vercel, configure `VITE_API_URL` com o domínio público da API Railway.

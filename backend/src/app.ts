@@ -9,13 +9,15 @@ import swaggerUi from 'swagger-ui-express'
 import { ZodError } from 'zod'
 import { openApiDocument } from './openapi'
 import { prisma } from './lib/prisma'
-import { requireAuth } from './middleware/auth'
+import { NotificationError } from './lib/mail'
+import { requireAuth, requirePasswordUpdated } from './middleware/auth'
 import { authRouter, configurePassport } from './routes/auth'
 import { productsRouter } from './routes/products'
 import { usersRouter } from './routes/users'
 import { unitsRouter } from './routes/units'
 import { purchasesRouter, PurchaseError } from './routes/purchases'
 import { reportsRouter } from './routes/reports'
+import { auditoriaRouter } from './routes/auditoria'
 
 dotenv.config()
 dotenv.config({ path: '../.env' })
@@ -55,16 +57,18 @@ export function createApp() {
   app.get('/api/openapi.json', (_req, res) => res.json(openApiDocument))
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, { explorer: true }))
   app.use('/auth', authRouter)
-  app.use('/estoque', requireAuth, productsRouter)
-  app.use('/usuarios', requireAuth, usersRouter)
-  app.use('/unidades', requireAuth, unitsRouter)
-  app.use('/compras', requireAuth, purchasesRouter)
-  app.use('/relatorios', requireAuth, reportsRouter)
+  app.use('/estoque', requireAuth, requirePasswordUpdated, productsRouter)
+  app.use('/usuarios', requireAuth, requirePasswordUpdated, usersRouter)
+  app.use('/unidades', requireAuth, requirePasswordUpdated, unitsRouter)
+  app.use('/compras', requireAuth, requirePasswordUpdated, purchasesRouter)
+  app.use('/relatorios', requireAuth, requirePasswordUpdated, reportsRouter)
+  app.use('/auditoria', requireAuth, requirePasswordUpdated, auditoriaRouter)
 
   app.use((_req, res) => res.status(404).json({ error: 'Endpoint não encontrado.' }))
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof ZodError) return res.status(400).json({ error: 'Dados inválidos.', details: error.issues })
     if (error instanceof PurchaseError) return res.status(error.status).json({ error: error.message })
+    if (error instanceof NotificationError) return res.status(error.status).json({ error: error.message })
     if (typeof error === 'object' && error !== null && 'code' in error) {
       const code = (error as { code?: string }).code
       if (code === 'P2025') return res.status(404).json({ error: 'Registro não encontrado.' })

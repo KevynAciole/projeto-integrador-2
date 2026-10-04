@@ -8,22 +8,41 @@ datasource db {
 }
 
 enum Perfil {
-  GESTOR
+  ADMIN
   SINDICO
+  ESTOQUISTA
   CONDOMINO
+  VISITANTE
 }
 
 model Usuario {
-  id        String   @id @default(cuid())
-  googleId  String?  @unique
-  email     String   @unique
-  nome      String
-  perfil    Perfil   @default(CONDOMINO)
-  unidadeId String?
-  unidade   Unidade? @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
-  compras   Compra[]
-  criadoEm  DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  numeroUsuario         String    @unique
+  googleId              String?   @unique
+  email                 String?   @unique
+  emailContato          String
+  telefone              String?   @unique
+  senhaHash             String?
+  deveTrocarSenha       Boolean   @default(true)
+  resetToken            String?
+  resetTokenExpiresAt   DateTime?
+  nome                  String
+  perfil                Perfil    @default(CONDOMINO)
+  unidadeId             String?
+  unidade               Unidade?  @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  compras               Compra[]
+  criadoEm              DateTime  @default(now())
+  atualizadoEm          DateTime  @updatedAt
+}
+
+model Auditoria {
+  id         String   @id @default(cuid())
+  acao       String
+  detalhes   String?
+  usuarioId  String?
+  usuarioNome String?
+  ipAddress  String?
+  criadoEm   DateTime @default(now())
 }
 
 model Unidade {
@@ -55,8 +74,8 @@ model Compra {
   id         String     @id @default(cuid())
   usuarioId  String
   usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
-  unidadeId  String
-  unidade    Unidade    @relation(fields: [unidadeId], references: [id], onDelete: Restrict)
+  unidadeId  String?
+  unidade    Unidade?   @relation(fields: [unidadeId], references: [id], onDelete: Restrict)
   itemId     String
   item       ItemEstoque @relation(fields: [itemId], references: [id], onDelete: Restrict)
   quantidade Int

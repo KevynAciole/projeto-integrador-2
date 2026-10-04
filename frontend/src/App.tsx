@@ -6,25 +6,35 @@ import { useAuth } from './auth/useAuth'
 import type { Role } from './auth/auth-context'
 import { DashboardPage } from './pages/DashboardPage'
 import { InventoryPage } from './pages/InventoryPage'
-import { PurchasesPage, BuyPage, UnitsPage, UsersPage } from './pages/CommercePages'
+import { BuyPage, UnitsPage, UsersPage } from './pages/CommercePages'
+import { PurchaseHistoryPage } from './pages/PurchaseHistoryPage'
 import { ReportsPage } from './pages/ReportsPageLive'
-import { LoginPage } from './pages/LoginPage'
+import { LoginPage, PasswordChangePage } from './pages/AuthPage'
+import { AuditPage } from './pages/AuditPage'
 import './App.css'
 
-const profileName: Record<Role, string> = { gestor: 'Gestor do estoque', sindico: 'Síndico', condomino: 'Condômino' }
+const profileName: Record<Role, string> = { admin: 'Administrador', sindico: 'Síndico', estoquista: 'Gestor de Estoque', condomino: 'Condômino', visitante: 'Visitante' }
+
+function InventoryRoute() {
+  const { user } = useAuth()
+  return <Protected roles={['admin', 'estoquista', 'visitante']}><InventoryPage readOnly={user?.perfil === 'visitante'} /></Protected>
+}
 
 function Protected({ roles, children }: { roles?: Role[]; children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const location = useLocation()
   if (loading) return <div className="loading-screen" aria-label="Carregando sessão"><span className="loader" /></div>
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (user.deveTrocarSenha && location.pathname !== '/alterar-senha') return <Navigate to="/alterar-senha" replace />
+  if (!user.deveTrocarSenha && location.pathname === '/alterar-senha') return <Navigate to="/" replace />
   if (roles && !roles.includes(user.perfil)) return <Navigate to={user.perfil === 'condomino' ? '/minhas-compras' : '/'} replace />
   return children
 }
 
 function LandingRedirect() {
   const { user } = useAuth()
-  return <Navigate to={user?.perfil === 'condomino' ? '/minhas-compras' : '/'} replace />
+  const destination = user?.perfil === 'condomino' ? '/minhas-compras' : user?.perfil === 'estoquista' ? '/estoque' : user?.perfil === 'visitante' ? '/estoque' : '/'
+  return <Navigate to={destination} replace />
 }
 
 function Shell() {
@@ -35,12 +45,16 @@ function Shell() {
   const [notice, setNotice] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
-  const role = user?.perfil ?? 'gestor'
-  const links = role === 'gestor'
-    ? [{ to: '/', label: 'Visão geral', icon: House, end: true }, { to: '/estoque', label: 'Estoque', icon: Box }, { to: '/compras', label: 'Compras', icon: ShoppingBag }, { to: '/relatorios', label: 'Relatórios', icon: BarChart3 }, { to: '/usuarios', label: 'Moradores', icon: UsersRound }]
+  const role = user?.perfil ?? 'admin'
+  const links = role === 'admin'
+    ? [{ to: '/', label: 'Visão geral', icon: House, end: true }, { to: '/estoque', label: 'Estoque', icon: Box }, { to: '/compras', label: 'Compras', icon: ShoppingBag }, { to: '/comprar', label: 'Comprar produtos', icon: PackagePlus }, { to: '/relatorios', label: 'Relatórios', icon: BarChart3 }, { to: '/unidades', label: 'Unidades', icon: House }, { to: '/usuarios', label: 'Usuários', icon: UsersRound }, { to: '/auditoria', label: 'Auditoria', icon: ShieldCheck }]
     : role === 'sindico'
-      ? [{ to: '/', label: 'Visão geral', icon: House, end: true }, { to: '/compras', label: 'Compras', icon: ShoppingBag }, { to: '/relatorios', label: 'Relatórios', icon: BarChart3 }, { to: '/unidades', label: 'Unidades', icon: House }, { to: '/usuarios', label: 'Moradores', icon: UsersRound }]
-      : [{ to: '/minhas-compras', label: 'Minhas compras', icon: ShoppingBag }, { to: '/comprar', label: 'Comprar produtos', icon: PackagePlus }, { to: '/minha-unidade', label: 'Minha unidade', icon: House }]
+      ? [{ to: '/', label: 'Visão geral', icon: House, end: true }, { to: '/compras', label: 'Compras', icon: ShoppingBag }, { to: '/comprar', label: 'Comprar produtos', icon: PackagePlus }, { to: '/relatorios', label: 'Relatórios', icon: BarChart3 }, { to: '/unidades', label: 'Unidades', icon: House }, { to: '/usuarios', label: 'Usuários', icon: UsersRound }]
+      : role === 'estoquista'
+        ? [{ to: '/estoque', label: 'Estoque', icon: Box, end: true }, { to: '/comprar', label: 'Registrar compra', icon: PackagePlus }, { to: '/minhas-compras-funcionario', label: 'Minhas compras', icon: ShoppingBag }]
+        : role === 'visitante'
+          ? [{ to: '/estoque', label: 'Produtos e preços', icon: Box, end: true }]
+          : [{ to: '/minhas-compras', label: 'Minhas compras', icon: ShoppingBag }, { to: '/comprar', label: 'Comprar produtos', icon: PackagePlus }, { to: '/minha-unidade', label: 'Minha unidade', icon: House }]
 
   useEffect(() => { document.documentElement.dataset.contrast = contrast ? 'high' : 'normal' }, [contrast])
   useEffect(() => { document.documentElement.dataset.textSize = largeText ? 'large' : 'normal' }, [largeText])
@@ -57,7 +71,7 @@ function Shell() {
     <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
     {mobileOpen && <button className="mobile-scrim" aria-label="Fechar menu" onClick={() => setMobileOpen(false)} />}
     <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Navegação principal">
-      <Link className="brand" to={role === 'condomino' ? '/minhas-compras' : '/'} aria-label="Mercado do Pátio, início"><span className="brand-mark"><House size={19} /></span><span className="brand-copy"><strong>mercado<span>.</span></strong><small>do pátio</small></span></Link>
+      <Link className="brand" to={role === 'condomino' ? '/minhas-compras' : role === 'estoquista' || role === 'visitante' ? '/estoque' : '/'} aria-label="Mercado do Pátio, início"><span className="brand-mark"><House size={19} /></span><span className="brand-copy"><strong>mercado<span>.</span></strong><small>do pátio</small></span></Link>
       <div className="side-label">ESPAÇO DO CONDOMÍNIO</div>
       <nav className="nav-list">{links.map(({ to, label, icon: Icon, end }) => <NavLink key={to} end={end} title={label} onClick={() => setMobileOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'nav-active' : ''}`} to={to}><Icon size={18} strokeWidth={1.8} /><span>{label}</span></NavLink>)}</nav>
       <div className="side-spacer" />
@@ -75,5 +89,22 @@ function Shell() {
 }
 
 export default function App() {
-  return <AuthProvider><BrowserRouter><Routes><Route path="/login" element={<LoginPage />} /><Route element={<Protected><Shell /></Protected>}><Route index element={<Protected roles={['gestor', 'sindico']}><DashboardPage /></Protected>} /><Route path="estoque" element={<Protected roles={['gestor']}><InventoryPage /></Protected>} /><Route path="compras" element={<Protected roles={['gestor', 'sindico']}><PurchasesPage /></Protected>} /><Route path="minhas-compras" element={<Protected roles={['condomino']}><PurchasesPage resident /></Protected>} /><Route path="comprar" element={<Protected roles={['condomino']}><BuyPage /></Protected>} /><Route path="relatorios" element={<Protected roles={['gestor', 'sindico']}><ReportsPage /></Protected>} /><Route path="unidades" element={<Protected roles={['gestor', 'sindico']}><UnitsPage /></Protected>} /><Route path="minha-unidade" element={<Protected roles={['condomino']}><UnitsPage resident /></Protected>} /><Route path="usuarios" element={<Protected roles={['gestor', 'sindico']}><UsersPage /></Protected>} /><Route path="*" element={<LandingRedirect />} /></Route></Routes></BrowserRouter></AuthProvider>
+  return <AuthProvider><BrowserRouter><Routes>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/alterar-senha" element={<Protected><PasswordChangePage /></Protected>} />
+    <Route element={<Protected><Shell /></Protected>}>
+      <Route index element={<Protected roles={['admin', 'sindico']}><DashboardPage /></Protected>} />
+      <Route path="estoque" element={<InventoryRoute />} />
+      <Route path="compras" element={<Protected roles={['admin', 'sindico']}><PurchaseHistoryPage /></Protected>} />
+      <Route path="minhas-compras" element={<Protected roles={['condomino']}><PurchaseHistoryPage resident /></Protected>} />
+      <Route path="minhas-compras-funcionario" element={<Protected roles={['estoquista']}><PurchaseHistoryPage employee /></Protected>} />
+      <Route path="comprar" element={<Protected roles={['condomino', 'sindico', 'admin', 'estoquista']}><BuyPage /></Protected>} />
+      <Route path="relatorios" element={<Protected roles={['admin', 'sindico']}><ReportsPage /></Protected>} />
+      <Route path="unidades" element={<Protected roles={['admin', 'sindico']}><UnitsPage /></Protected>} />
+      <Route path="minha-unidade" element={<Protected roles={['condomino']}><UnitsPage resident /></Protected>} />
+      <Route path="usuarios" element={<Protected roles={['admin', 'sindico']}><UsersPage /></Protected>} />
+      <Route path="auditoria" element={<Protected roles={['admin']}><AuditPage /></Protected>} />
+      <Route path="*" element={<LandingRedirect />} />
+    </Route>
+  </Routes></BrowserRouter></AuthProvider>
 }

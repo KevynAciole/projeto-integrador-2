@@ -31,10 +31,10 @@ describe('requireAuth', () => {
 
 describe('allowRoles', () => {
   it('permite o perfil autorizado', () => {
-    const req = { user: { perfil: Perfil.GESTOR } } as unknown as Request
+    const req = { user: { perfil: Perfil.ADMIN } } as unknown as Request
     const next = jest.fn() as NextFunction
 
-    allowRoles(Perfil.GESTOR)(req, responseMocks(), next)
+    allowRoles(Perfil.ADMIN)(req, responseMocks(), next)
 
     expect(next).toHaveBeenCalledTimes(1)
   })
@@ -44,7 +44,7 @@ describe('allowRoles', () => {
     const res = responseMocks()
     const next = jest.fn() as NextFunction
 
-    allowRoles(Perfil.GESTOR)(req, res, next)
+    allowRoles(Perfil.ADMIN)(req, res, next)
 
     expect(res.status).toHaveBeenCalledWith(403)
     expect(next).not.toHaveBeenCalled()
