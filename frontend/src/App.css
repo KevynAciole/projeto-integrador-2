@@ -322,6 +322,9 @@ kbd { padding: 2px 4px; border: 1px solid #e5e9e4; border-radius: 3px; color: #9
 .login-inline-link { justify-content: center; width: 100%; margin-top: 5px; padding: 6px; }
 .login-register-prompt { margin: 15px 0 0; color: #859188; text-align: center; font-size: 10px; }
 .login-register-prompt .text-link { padding: 0 2px; }
+.demo-disclosure { display: flex; justify-content: center; width: fit-content; margin: 15px auto 0; padding: 4px 7px; color: #7b897e; font-size: 9px; font-weight: 500; }
+.demo-disclosure:hover { color: #246f4b; text-decoration: underline; }
+.login-panel .demo-entry { margin-top: 8px; }
 .auth-flow-form { margin-top: 18px; }
 .auth-flow-form label { font-size: 11px; }
 .auth-flow-form input, .auth-flow-form select { height: 42px; font-size: 12px; }

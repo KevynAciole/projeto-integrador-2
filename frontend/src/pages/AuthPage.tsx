@@ -13,6 +13,7 @@ export function LoginPage() {
   const location = useLocation()
   const [view, setView] = useState<'login' | 'recovery' | 'register'>('login')
   const [showLocalLogin, setShowLocalLogin] = useState(false)
+  const [showDemo, setShowDemo] = useState(false)
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [demoRole, setDemoRole] = useState<Role>('admin')
@@ -164,8 +165,10 @@ export function LoginPage() {
           </form>}
         {!showLocalLogin && <button className="text-link login-inline-link" onClick={() => changeView('recovery')}>Esqueci minha senha</button>}
         <p className="login-register-prompt">Ainda não tem acesso? <button className="text-link" onClick={() => changeView('register')}>Cadastre-se como condômino</button></p>
-        <div className="login-separator"><span />modo demonstração<span /></div>
-        <div className="demo-entry"><div className="demo-title"><span className="demo-icon">✳</span><span><strong>Conhecer o sistema</strong><small>Dados fictícios, sem gravação no banco</small></span></div><label htmlFor="demo-role">Perfil de acesso</label><select id="demo-role" value={demoRole} onChange={(event) => setDemoRole(event.target.value as Role)}><option value="admin">Administrador</option><option value="sindico">Síndico</option><option value="estoquista">Gestor de Estoque</option><option value="condomino">Condômino</option><option value="visitante">Visitante</option></select><button className="button button-dark demo-button" onClick={() => { enterDemo(demoRole); navigate(startPath[demoRole]) }}>Entrar na demonstração<ArrowUpRight size={16} /></button></div>
+        <button type="button" className="text-link demo-disclosure" aria-expanded={showDemo} onClick={() => setShowDemo((current) => !current)}>
+          {showDemo ? 'Ocultar demonstração' : 'Conheça o sistema'}
+        </button>
+        {showDemo && <div className="demo-entry"><div className="demo-title"><span className="demo-icon">✳</span><span><strong>Conhecer o sistema</strong><small>Dados fictícios, sem gravação no banco</small></span></div><label htmlFor="demo-role">Perfil de acesso</label><select id="demo-role" value={demoRole} onChange={(event) => setDemoRole(event.target.value as Role)}><option value="admin">Administrador</option><option value="sindico">Síndico</option><option value="estoquista">Gestor de Estoque</option><option value="condomino">Condômino</option><option value="visitante">Visitante</option></select><button className="button button-dark demo-button" onClick={() => { enterDemo(demoRole); navigate(startPath[demoRole]) }}>Entrar na demonstração<ArrowUpRight size={16} /></button></div>}
         <p className="privacy-note"><ShieldCheck size={14} />A senha temporária deve ser trocada no primeiro acesso.</p>
       </>}
       {view === 'recovery' && <>
