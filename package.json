@@ -1,6 +1,9 @@
 {
   "name": "gestao-minimercado-condominio",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "workspaces": [
     "frontend",
     "backend"

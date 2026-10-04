@@ -2,11 +2,11 @@
   "name": "@minimercado/backend",
   "private": true,
   "version": "1.0.0",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "test": "jest --runInBand",
     "lint": "tsc --noEmit -p tsconfig.json",
     "db:generate": "prisma generate",
