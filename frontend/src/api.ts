@@ -1,5 +1,5 @@
 const configuredApiUrl = import.meta.env.VITE_API_URL
-export const API_URL = (configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:3000' : '')).replace(/\/$/, '')
+export const API_URL = (import.meta.env.DEV ? configuredApiUrl || 'http://localhost:3000' : '').replace(/\/$/, '')
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {

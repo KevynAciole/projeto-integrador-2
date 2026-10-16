@@ -91,9 +91,9 @@ O modelo completo está em `.env.example`. Os valores de exemplo servem somente 
 | `PORT` | Porta da API; padrão local `3000` |
 | `CLIENT_URL` | Origem do frontend; local `http://localhost:5173` |
 | `CORS_ORIGIN` | Origem(ns) autorizada(s) para chamadas com cookie |
-| `VITE_API_URL` | URL pública da API; local pode ficar vazio, em produção use o domínio Railway |
+| `VITE_API_URL` | URL da API opcional para desenvolvimento local; deixe vazio em produção para usar o proxy same-origin do Vercel |
 
-No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada e a URL configurada em `GOOGLE_CALLBACK_URL` como URI de redirecionamento autorizado.
+No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada e a URL configurada em `GOOGLE_CALLBACK_URL` como URI de redirecionamento autorizado. Em produção com Vercel, use o callback no domínio do frontend (`https://<dominio-vercel>/auth/google/callback`), encaminhado pelo proxy para a API Railway.
 
 No Resend, crie uma API key e verifique o domínio remetente para enviar e-mails aos usuários. O remetente de teste `onboarding@resend.dev` só pode ser usado com destinatários autorizados pela conta Resend.
 
@@ -140,7 +140,7 @@ Com a API em execução, Swagger UI está disponível em [`http://localhost:3000
 
 - Nunca publique arquivos `.env`. O `.gitignore` já os exclui e mantém `.env.example` como modelo sem segredos.
 - Não versione credenciais, chaves privadas, certificados, dumps de banco ou dados pessoais. Revise `git status` antes de cada commit.
-- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `VITE_API_URL`, `RESEND_API_KEY` e `RESEND_FROM` diretamente nas configurações protegidas do serviço de hospedagem.
+- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `RESEND_API_KEY` e `RESEND_FROM` diretamente nas configurações protegidas do serviço de hospedagem. Em produção, deixe `VITE_API_URL` vazio para que o frontend acesse a API pelo proxy same-origin do Vercel.
 - Use HTTPS em produção e um `SESSION_SECRET` exclusivo e aleatório. Não reutilize os valores de exemplo.
 - Revise logs e mensagens de erro para garantir que tokens, cookies, credenciais e dados pessoais não sejam registrados.
 - No Railway, aplique migrações com `prisma migrate deploy`; na Vercel, configure `VITE_API_URL` com o domínio público da API Railway.
