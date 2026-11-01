@@ -11,7 +11,7 @@ Sistema web para administrar o minimercado de um condomínio. Administradores e 
 - **Validação:** Zod
 - **Testes:** Jest e Supertest
 - **Documentação da API:** Swagger UI e OpenAPI
-- **Hospedagem:** Vercel para o frontend e Railway para API/PostgreSQL
+- **Hospedagem:** Render para frontend, API e PostgreSQL
 
 ## Requisitos
 
@@ -91,9 +91,9 @@ O modelo completo está em `.env.example`. Os valores de exemplo servem somente 
 | `PORT` | Porta da API; padrão local `3000` |
 | `CLIENT_URL` | Origem do frontend; local `http://localhost:5173` |
 | `CORS_ORIGIN` | Origem(ns) autorizada(s) para chamadas com cookie |
-| `VITE_API_URL` | URL da API opcional para desenvolvimento local; deixe vazio em produção para usar o proxy same-origin do Vercel |
+| `VITE_API_URL` | URL pública da API; em desenvolvimento pode ficar vazio para usar `http://localhost:3000` |
 
-No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada e a URL configurada em `GOOGLE_CALLBACK_URL` como URI de redirecionamento autorizado. Em produção com Vercel, use o callback no domínio do frontend (`https://<dominio-vercel>/auth/google/callback`), encaminhado pelo proxy para a API Railway.
+No Google Cloud, cadastre a origem do frontend como origem JavaScript autorizada e a URL da API configurada em `GOOGLE_CALLBACK_URL` como URI de redirecionamento autorizado. No Render, o callback deve usar o domínio público do Web Service da API.
 
 No Resend, crie uma API key e verifique o domínio remetente para enviar e-mails aos usuários. O remetente de teste `onboarding@resend.dev` só pode ser usado com destinatários autorizados pela conta Resend.
 
@@ -138,11 +138,13 @@ Com a API em execução, Swagger UI está disponível em [`http://localhost:3000
 
 ## Segurança e publicação
 
+O passo a passo completo para publicar frontend, API e PostgreSQL no Render está em [docs/deploy.md](docs/deploy.md).
+
 - Nunca publique arquivos `.env`. O `.gitignore` já os exclui e mantém `.env.example` como modelo sem segredos.
 - Não versione credenciais, chaves privadas, certificados, dumps de banco ou dados pessoais. Revise `git status` antes de cada commit.
-- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `RESEND_API_KEY` e `RESEND_FROM` diretamente nas configurações protegidas do serviço de hospedagem. Em produção, deixe `VITE_API_URL` vazio para que o frontend acesse a API pelo proxy same-origin do Vercel.
+- Configure `DATABASE_URL`, segredos OAuth, `SESSION_SECRET`, `CLIENT_URL`, `CORS_ORIGIN`, `RESEND_API_KEY` e `RESEND_FROM` diretamente nas configurações protegidas do Web Service Render. No Static Site Render, configure `VITE_API_URL` com a URL pública da API.
 - Use HTTPS em produção e um `SESSION_SECRET` exclusivo e aleatório. Não reutilize os valores de exemplo.
 - Revise logs e mensagens de erro para garantir que tokens, cookies, credenciais e dados pessoais não sejam registrados.
-- No Railway, aplique migrações com `prisma migrate deploy`; na Vercel, configure `VITE_API_URL` com o domínio público da API Railway.
+- No Render, o Web Service aplica migrações com `prisma migrate deploy` antes de iniciar a API; no Static Site, configure `VITE_API_URL` com o domínio público da API.
 
 Consulte [docs/deploy.md](docs/deploy.md) para o roteiro de publicação completo. O GitHub Actions executa testes e build em pushes e pull requests para `main`.

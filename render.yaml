@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: minimercado-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace @minimercado/backend
+    startCommand: npm run db:deploy --workspace @minimercado/backend && npm start --workspace @minimercado/backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: minimercado-db
+          property: connectionString
+      - key: SESSION_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+
+  - type: web
+    name: minimercado-frontend
+    runtime: static
+    buildCommand: npm install && npm run build --workspace @minimercado/frontend
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: minimercado-db
+    plan: free
