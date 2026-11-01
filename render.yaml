@@ -32,9 +32,8 @@ services:
       - key: RESEND_FROM
         sync: false
 
-  - type: web
+  - type: static_site
     name: minimercado-frontend
-    runtime: static
     buildCommand: npm install && npm run build --workspace @minimercado/frontend
     staticPublishPath: frontend/dist
     envVars:
