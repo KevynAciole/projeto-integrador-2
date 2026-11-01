@@ -28,7 +28,7 @@ Este é o procedimento recomendado para publicar todos os componentes no Render.
 2. Configure:
    - **Root Directory:** deixe vazio, usando a raiz do monorepo;
    - **Runtime:** Node;
-   - **Build Command:** `npm install && npm run build --workspace @minimercado/backend`;
+   - **Build Command:** `npm install --include=dev && npm run build --workspace @minimercado/backend`;
    - **Start Command:** `npm run db:deploy --workspace @minimercado/backend && npm start --workspace @minimercado/backend`;
    - **Health Check Path:** `/health`;
    - **Node Version:** `22` ou superior. O projeto declara essa exigência no `package.json`.
@@ -59,7 +59,7 @@ Não é necessário definir `PORT`: o Render fornece essa variável e [backend/s
 1. Selecione **New > Static Site**, conecte o mesmo repositório e use a mesma branch da API.
 2. Configure:
    - **Root Directory:** deixe vazio, usando a raiz do monorepo;
-   - **Build Command:** `npm install && npm run build --workspace @minimercado/frontend`;
+   - **Build Command:** `npm install --include=dev && npm run build --workspace @minimercado/frontend`;
    - **Publish Directory:** `frontend/dist`.
 3. Adicione a variável de ambiente:
 

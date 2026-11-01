@@ -3,7 +3,7 @@ services:
     name: minimercado-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build --workspace @minimercado/backend
+    buildCommand: npm install --include=dev && npm run build --workspace @minimercado/backend
     startCommand: npm run db:deploy --workspace @minimercado/backend && npm start --workspace @minimercado/backend
     healthCheckPath: /health
     envVars:
@@ -34,7 +34,7 @@ services:
 
   - type: static_site
     name: minimercado-frontend
-    buildCommand: npm install && npm run build --workspace @minimercado/frontend
+    buildCommand: npm install --include=dev && npm run build --workspace @minimercado/frontend
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
