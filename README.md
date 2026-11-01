@@ -132,6 +132,8 @@ A tela de login oferece um modo de demonstração com perfis e dados fictícios,
 
 O seed real (`npm run db:seed`) cria somente os administradores listados em `ADMIN_EMAILS`; não inclui produtos, unidades ou compras de teste. O cadastro de usuário gera número de usuário e senha temporária, envia as credenciais ao e-mail de contato e força a troca da senha no primeiro acesso. Antes de abrir o sistema ao público, desative ou remova a entrada de demonstração e substitua os exemplos por cadastros controlados no banco. Não use dados fictícios como dados operacionais.
 
+Para iniciar os testes no Render sem alterar o código, use os inserts SQL documentados em [docs/testing-render.md](docs/testing-render.md). Eles criam um usuário de teste para cada perfil e podem ser executados pela extensão PostgreSQL do VS Code usando a External Database URL do Render.
+
 ## Documentação da API
 
 Com a API em execução, Swagger UI está disponível em [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) e o documento OpenAPI em `/api/openapi.json`. A lista de endpoints e permissões também está em [docs/api.md](docs/api.md).
