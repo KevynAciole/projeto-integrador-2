@@ -7,7 +7,6 @@ type AuditEntry = {
   detalhes?: string | null
   usuarioNome?: string | null
   usuarioId?: string | null
-  ipAddress?: string | null
   criadoEm: string
 }
 
@@ -66,17 +65,15 @@ export function AuditPage() {
             <th>AÇÃO</th>
             <th>USUÁRIO</th>
             <th>DETALHES</th>
-            <th>IP</th>
             <th>DATA</th>
           </tr>
         </thead>
         <tbody>
-          {entries.length === 0 ? <tr><td colSpan={5}>Nenhum registro de auditoria.</td></tr> : entries.map((entry) => (
+          {entries.length === 0 ? <tr><td colSpan={4}>Nenhum registro de auditoria.</td></tr> : entries.map((entry) => (
             <tr key={entry.id}>
               <td>{entry.acao}</td>
               <td>{entry.usuarioNome ?? entry.usuarioId ?? 'Sistema'}</td>
               <td>{entry.detalhes ?? '—'}</td>
-              <td>{entry.ipAddress ?? '—'}</td>
               <td>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(entry.criadoEm))}</td>
             </tr>
           ))}

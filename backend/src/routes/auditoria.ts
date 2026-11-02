@@ -41,8 +41,20 @@ auditoriaRouter.get('/', allowRoles(Perfil.ADMIN), asyncHandler(async (req, res)
     } : {}),
   }
 
-  const registros = await prisma.auditoria.findMany({ where, orderBy: { criadoEm: 'desc' }, take: limit })
-  return res.json(registros)
+  const registros = await prisma.auditoria.findMany({
+    where,
+    select: { id: true, acao: true, detalhes: true, usuarioId: true, usuarioNome: true, criadoEm: true },
+    orderBy: { criadoEm: 'desc' },
+    take: limit,
+  })
+  return res.json(registros.map(({ id, acao, detalhes, usuarioId, usuarioNome, criadoEm }) => ({
+    id,
+    acao,
+    detalhes,
+    usuarioId,
+    usuarioNome,
+    criadoEm,
+  })))
 }))
 
 auditoriaRouter.get('/resumo', allowRoles(Perfil.ADMIN), asyncHandler(async (_req, res) => {
