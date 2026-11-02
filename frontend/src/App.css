@@ -261,6 +261,24 @@ kbd { padding: 2px 4px; border: 1px solid #e5e9e4; border-radius: 3px; color: #9
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .form-error { margin: 0; color: #ad5347; font-size: 10px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.unit-delete-modal { position: relative; display: grid; justify-items: center; gap: 11px; text-align: center; }
+.unit-delete-close { position: absolute; top: 12px; right: 12px; }
+.unit-delete-icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 50%; color: #a64e40; background: #fbefec; }
+.unit-delete-icon.unit-delete-blocked { color: #8c5a20; background: #fbf3e5; }
+.unit-delete-modal h2 { margin: 0; color: #344a3a; font-size: 18px; }
+.unit-delete-modal > p { max-width: 360px; margin: 0; color: #65756a; font-size: 11px; line-height: 1.6; }
+.unit-delete-details { display: grid; width: 100%; gap: 8px; margin: 4px 0; padding: 12px; border: 1px solid #e8eee7; border-radius: 5px; background: #f8faf7; text-align: left; }
+.unit-delete-details > span { display: flex; align-items: center; gap: 8px; color: #65756a; font-size: 11px; }
+.unit-delete-details > span svg { color: #78907c; }
+.unit-delete-details strong { margin-left: auto; color: #344a3a; }
+.unit-delete-modal .modal-actions { width: 100%; justify-content: center; }
+.unit-delete-confirm { border: 1px solid #ad5347; color: #fff; background: #ad5347; }
+.unit-delete-confirm:hover:not(:disabled) { background: #923f35; }
+.unit-delete-confirm:disabled { cursor: not-allowed; opacity: .55; }
+.purchase-success-modal { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.purchase-success-icon { color: #246f4b; }
+.purchase-success-modal h2 { margin: 0; color: #344a3a; font-size: 19px; }
+.purchase-success-modal p { margin: 0 0 4px; color: #65756a; font-size: 12px; line-height: 1.6; }
 .toast { position: fixed; z-index: 80; right: 22px; bottom: 20px; display: flex; max-width: min(440px, calc(100vw - 30px)); align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #d7e5d7; border-radius: 5px; color: #2e6342; background: #fff; box-shadow: 0 8px 30px rgba(27, 57, 39, .12); font-size: 11px; animation: rise-in .2s ease-out; }
 .toast .icon-button { width: 27px; height: 27px; margin-left: auto; }
 .loading-screen, .denied { display: grid; min-height: 100vh; place-content: center; justify-items: center; gap: 10px; color: #4a6652; }

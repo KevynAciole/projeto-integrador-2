@@ -80,9 +80,18 @@ usersRouter.patch('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler
 
   const { unidadeId, email, ...userFields } = data
   const unitUpdate = unidadeId === undefined ? {} : unidadeId ? { unidade: { connect: { id: unidadeId } } } : { unidade: { disconnect: true } }
-  const user = await prisma.usuario.update({
-    where: { id },
-    data: { ...userFields, ...(email !== undefined ? { email, emailContato: email } : {}), ...unitUpdate },
+  const user = await prisma.$transaction(async (transaction) => {
+    const updatedUser = await transaction.usuario.update({
+      where: { id },
+      data: { ...userFields, ...(email !== undefined ? { email, emailContato: email } : {}), ...unitUpdate },
+    })
+    if (!target.unidadeId && unidadeId) {
+      await transaction.compra.updateMany({
+        where: { usuarioId: id, unidadeId: null },
+        data: { unidadeId },
+      })
+    }
+    return updatedUser
   })
   return res.json({ id: user.id, numeroUsuario: user.numeroUsuario, email: user.email ?? user.emailContato, telefone: user.telefone, nome: user.nome, perfil: user.perfil.toLowerCase(), unidadeId: user.unidadeId, deveTrocarSenha: user.deveTrocarSenha })
 }))
