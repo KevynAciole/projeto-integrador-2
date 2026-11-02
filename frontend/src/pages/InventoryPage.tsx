@@ -12,6 +12,7 @@ const examples: Product[] = [
   { id: 'd5', nome: 'Água mineral 1,5L', categoria: 'Bebidas', quantidade: 2, preco: 3.25 },
 ]
 type ShellContext = { notify: (message: string) => void }
+const MAX_UNIT_PRICE = 999999
 
 export function InventoryPage({ readOnly = false }: { readOnly?: boolean }) {
   const { demo } = useAuth()
@@ -63,8 +64,13 @@ function ProductModal({ initial, onClose, onSave }: { initial: Product | null; o
   const [error, setError] = useState('')
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
-    try { await onSave({ nome: name.trim(), categoria: category, quantidade: Number(quantity), preco: Number(price.replace(',', '.')) }, initial?.id) }
+    const unitPrice = Number(price.replace(',', '.'))
+    if (unitPrice > MAX_UNIT_PRICE) {
+      setError('O preço unitário não pode ultrapassar R$ 999.999,00.')
+      return
+    }
+    try { await onSave({ nome: name.trim(), categoria: category, quantidade: Number(quantity), preco: unitPrice }, initial?.id) }
     catch (caught) { setError(caught instanceof Error ? caught.message : 'Erro ao salvar o produto.') }
   }
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-heading"><div className="modal-heading"><div><span className="panel-eyebrow">CADASTRO DE PRODUTO</span><h2 id="product-modal-heading">{initial ? 'Editar produto' : 'Novo produto'}</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose}><X size={19} /></button></div><form onSubmit={(event) => { void submit(event) }}><label>Nome do produto<input autoFocus required minLength={2} value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Arroz integral 1kg" /></label><label>Categoria<select value={category} onChange={(event) => setCategory(event.target.value)}><option>Mercearia</option><option>Laticínios</option><option>Bebidas</option><option>Padaria</option><option>Higiene</option></select></label><div className="form-row"><label>Quantidade<input required min="0" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="0" /></label><label>Preço unitário<input required min="0.01" step="0.01" type="number" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="0,00" /></label></div>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary">{initial ? 'Salvar alterações' : <><Plus size={16} />Adicionar produto</>}</button></div></form></section></div>
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-heading"><div className="modal-heading"><div><span className="panel-eyebrow">CADASTRO DE PRODUTO</span><h2 id="product-modal-heading">{initial ? 'Editar produto' : 'Novo produto'}</h2></div><button className="icon-button" aria-label="Fechar" onClick={onClose}><X size={19} /></button></div><form onSubmit={(event) => { void submit(event) }}><label>Nome do produto<input autoFocus required minLength={2} value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Arroz integral 1kg" /></label><label>Categoria<select value={category} onChange={(event) => setCategory(event.target.value)}><option>Mercearia</option><option>Laticínios</option><option>Bebidas</option><option>Padaria</option><option>Higiene</option></select></label><div className="form-row"><label>Quantidade<input required min="0" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="0" /></label><label>Preço unitário<input required min="0.01" step="0.01" type="number" value={price} onChange={(event) => { setPrice(event.target.value); setError('') }} placeholder="0,00" /></label></div>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary">{initial ? 'Salvar alterações' : <><Plus size={16} />Adicionar produto</>}</button></div></form></section></div>
 }

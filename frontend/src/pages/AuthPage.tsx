@@ -25,6 +25,7 @@ export function LoginPage() {
   const [selfName, setSelfName] = useState('')
   const [selfEmail, setSelfEmail] = useState('')
   const [selfPhone, setSelfPhone] = useState('')
+  const [registrationFieldErrors, setRegistrationFieldErrors] = useState<{ name?: string; email?: string; phone?: string }>({})
   const [selfUnit, setSelfUnit] = useState('')
   const [units, setUnits] = useState<{ id: string; numero: string; bloco?: string | null }[]>([])
   const [unitsLoading, setUnitsLoading] = useState(false)
@@ -140,6 +141,23 @@ export function LoginPage() {
     }
   }
 
+  const continueRegistration = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const errors: { name?: string; email?: string; phone?: string } = {}
+    if (selfName.trim().length < 2) errors.name = 'Informe seu nome completo.'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(selfEmail.trim())) {
+      errors.email = 'Informe um e-mail válido, como voce@exemplo.com.'
+    }
+    const phoneDigits = selfPhone.replace(/\D/g, '')
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      errors.phone = 'Informe um telefone com DDD e de 10 a 15 números.'
+    }
+    setRegistrationFieldErrors(errors)
+    if (Object.keys(errors).length) return
+    setError('')
+    setRegisterStep(2)
+  }
+
   return <main className="login-page">
     <section className="login-story">
       <div className="login-topline"><span className="brand-mark"><House size={19} /></span><span className="login-brand">mercado<span>.</span><small>do pátio</small></span><span className="login-edition">CONDOMÍNIO PÁTIO DAS FLORES</span></div>
@@ -193,10 +211,10 @@ export function LoginPage() {
             <div className="registration-progress" aria-label={`Etapa ${registerStep} de 3`}>
               {[1, 2, 3].map((step) => <span key={step} className={step <= registerStep ? 'step-active' : ''}><i>{step}</i>{step === 1 ? 'Seus dados' : step === 2 ? 'Sua unidade' : 'Confirmação'}</span>)}
             </div>
-            {registerStep === 1 && <form className="local-login auth-flow-form" onSubmit={(event) => { event.preventDefault(); setRegisterStep(2); setError('') }}>
-              <label>Nome completo<input autoComplete="name" required minLength={2} value={selfName} onChange={(event) => setSelfName(event.target.value)} placeholder="Ex.: Ana Souza" /></label>
-              <label>E-mail (login Google e recebimento das credenciais)<input autoComplete="email" required type="email" value={selfEmail} onChange={(event) => setSelfEmail(event.target.value)} placeholder="voce@exemplo.com" /></label>
-              <label>Telefone<input autoComplete="tel" required inputMode="tel" value={selfPhone} onChange={(event) => setSelfPhone(event.target.value)} placeholder="(11) 99999-0000" /></label>
+            {registerStep === 1 && <form className="local-login auth-flow-form" noValidate onSubmit={continueRegistration}>
+              <label>Nome completo<input autoComplete="name" required minLength={2} aria-invalid={Boolean(registrationFieldErrors.name)} aria-describedby={registrationFieldErrors.name ? 'registration-name-error' : undefined} value={selfName} onChange={(event) => { setSelfName(event.target.value); setRegistrationFieldErrors((current) => ({ ...current, name: undefined })) }} placeholder="Ex.: Ana Souza" />{registrationFieldErrors.name && <span id="registration-name-error" className="form-error" role="alert">{registrationFieldErrors.name}</span>}</label>
+              <label>E-mail (login Google e recebimento das credenciais)<input autoComplete="email" required type="email" aria-invalid={Boolean(registrationFieldErrors.email)} aria-describedby={registrationFieldErrors.email ? 'registration-email-error' : undefined} value={selfEmail} onChange={(event) => { setSelfEmail(event.target.value); setRegistrationFieldErrors((current) => ({ ...current, email: undefined })) }} placeholder="voce@exemplo.com" />{registrationFieldErrors.email && <span id="registration-email-error" className="form-error" role="alert">{registrationFieldErrors.email}</span>}</label>
+              <label>Telefone<input autoComplete="tel" required inputMode="tel" aria-invalid={Boolean(registrationFieldErrors.phone)} aria-describedby={registrationFieldErrors.phone ? 'registration-phone-error' : undefined} value={selfPhone} onChange={(event) => { setSelfPhone(event.target.value); setRegistrationFieldErrors((current) => ({ ...current, phone: undefined })) }} placeholder="(11) 99999-0000" />{registrationFieldErrors.phone && <span id="registration-phone-error" className="form-error" role="alert">{registrationFieldErrors.phone}</span>}</label>
               <button className="button button-primary demo-button">Continuar</button>
             </form>}
             {registerStep === 2 && <form className="local-login auth-flow-form" onSubmit={(event) => { event.preventDefault(); setRegisterStep(3); setError('') }}>
