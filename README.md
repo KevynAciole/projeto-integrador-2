@@ -150,3 +150,5 @@ O passo a passo completo para publicar frontend, API e PostgreSQL no Render est�
 - No Render, o Web Service aplica migrações com `prisma migrate deploy` antes de iniciar a API; no Static Site, configure `VITE_API_URL` com o domínio público da API.
 
 Consulte [docs/deploy.md](docs/deploy.md) para o roteiro de publicação completo. O GitHub Actions executa testes e build em pushes e pull requests para `main`.
+
+O documento [docs/privacidade-rascunho.md](docs/privacidade-rascunho.md) é um rascunho interno baseado no comportamento atual do sistema; não é uma política final nem deve ser publicado sem validação do controlador e revisão jurídica/privacidade.
