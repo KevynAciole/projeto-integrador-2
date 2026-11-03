@@ -70,7 +70,10 @@ export function LoginPage() {
     setError('')
     try {
       const user = await signIn(identifier, password)
-      navigate(user.deveTrocarSenha ? '/alterar-senha' : from ?? startPath[user.perfil], { replace: true })
+      const destination = user.perfil === 'estoquista'
+        ? from && ['/estoque', '/comprar', '/minhas-compras-funcionario'].includes(from) ? from : startPath.estoquista
+        : from ?? startPath[user.perfil]
+      navigate(user.deveTrocarSenha ? '/alterar-senha' : destination, { replace: true })
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível entrar.')
     } finally {
@@ -149,8 +152,8 @@ export function LoginPage() {
       errors.email = 'Informe um e-mail válido, como voce@exemplo.com.'
     }
     const phoneDigits = selfPhone.replace(/\D/g, '')
-    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
-      errors.phone = 'Informe um telefone com DDD e de 10 a 15 números.'
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      errors.phone = 'Informe um telefone fixo ou celular com DDD (10 ou 11 dígitos).'
     }
     setRegistrationFieldErrors(errors)
     if (Object.keys(errors).length) return
@@ -214,7 +217,7 @@ export function LoginPage() {
             {registerStep === 1 && <form className="local-login auth-flow-form" noValidate onSubmit={continueRegistration}>
               <label>Nome completo<input autoComplete="name" required minLength={2} aria-invalid={Boolean(registrationFieldErrors.name)} aria-describedby={registrationFieldErrors.name ? 'registration-name-error' : undefined} value={selfName} onChange={(event) => { setSelfName(event.target.value); setRegistrationFieldErrors((current) => ({ ...current, name: undefined })) }} placeholder="Ex.: Ana Souza" />{registrationFieldErrors.name && <span id="registration-name-error" className="form-error" role="alert">{registrationFieldErrors.name}</span>}</label>
               <label>E-mail (login Google e recebimento das credenciais)<input autoComplete="email" required type="email" aria-invalid={Boolean(registrationFieldErrors.email)} aria-describedby={registrationFieldErrors.email ? 'registration-email-error' : undefined} value={selfEmail} onChange={(event) => { setSelfEmail(event.target.value); setRegistrationFieldErrors((current) => ({ ...current, email: undefined })) }} placeholder="voce@exemplo.com" />{registrationFieldErrors.email && <span id="registration-email-error" className="form-error" role="alert">{registrationFieldErrors.email}</span>}</label>
-              <label>Telefone<input autoComplete="tel" required inputMode="tel" aria-invalid={Boolean(registrationFieldErrors.phone)} aria-describedby={registrationFieldErrors.phone ? 'registration-phone-error' : undefined} value={selfPhone} onChange={(event) => { setSelfPhone(event.target.value); setRegistrationFieldErrors((current) => ({ ...current, phone: undefined })) }} placeholder="(11) 99999-0000" />{registrationFieldErrors.phone && <span id="registration-phone-error" className="form-error" role="alert">{registrationFieldErrors.phone}</span>}</label>
+              <label>Telefone<input autoComplete="tel" required inputMode="numeric" maxLength={11} aria-invalid={Boolean(registrationFieldErrors.phone)} aria-describedby={registrationFieldErrors.phone ? 'registration-phone-error' : undefined} value={selfPhone} onChange={(event) => { const phone = event.target.value.replace(/\D/g, '').slice(0, 11); setSelfPhone(phone); setRegistrationFieldErrors((current) => ({ ...current, phone: undefined })) }} placeholder="11999990000" />{registrationFieldErrors.phone && <span id="registration-phone-error" className="form-error" role="alert">{registrationFieldErrors.phone}</span>}</label>
               <button className="button button-primary demo-button">Continuar</button>
             </form>}
             {registerStep === 2 && <form className="local-login auth-flow-form" onSubmit={(event) => { event.preventDefault(); setRegisterStep(3); setError('') }}>

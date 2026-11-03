@@ -1,4 +1,4 @@
-import { Perfil } from '@prisma/client'
+import { Perfil, Prisma } from '@prisma/client'
 import { Router } from 'express'
 import { z } from 'zod'
 import { asyncHandler } from '../lib/async-handler'
@@ -7,6 +7,11 @@ import { allowRoles, type AuthUser } from '../middleware/auth'
 
 export const unitsRouter = Router()
 const unitSchema = z.object({ numero: z.string().trim().regex(/^\d{1,20}$/, 'O número da unidade deve conter apenas números.'), bloco: z.string().trim().max(20).optional() })
+const duplicateUnitError = 'Já existe uma unidade com este número neste bloco.'
+
+function isDuplicateUnitError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+}
 
 unitsRouter.get('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (_req, res) => {
   const units = await prisma.unidade.findMany({ include: { moradores: { where: { excluidoEm: null }, select: { id: true, nome: true, email: true } }, _count: { select: { moradores: true, compras: true } } }, orderBy: [{ bloco: 'asc' }, { numero: 'asc' }] })
@@ -15,14 +20,26 @@ unitsRouter.get('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(asyn
 
 unitsRouter.post('/', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
   const data = unitSchema.parse(req.body)
-  const unit = await prisma.unidade.create({ data })
+  let unit: Awaited<ReturnType<typeof prisma.unidade.create>>
+  try {
+    unit = await prisma.unidade.create({ data })
+  } catch (error) {
+    if (isDuplicateUnitError(error)) return res.status(409).json({ error: duplicateUnitError })
+    throw error
+  }
   return res.status(201).json(unit)
 }))
 
 unitsRouter.patch('/:id', allowRoles(Perfil.ADMIN, Perfil.SINDICO), asyncHandler(async (req, res) => {
   const id = z.string().parse(req.params.id)
   const data = unitSchema.partial().refine((value) => Object.keys(value).length > 0).parse(req.body)
-  const unit = await prisma.unidade.update({ where: { id }, data })
+  let unit: Awaited<ReturnType<typeof prisma.unidade.update>>
+  try {
+    unit = await prisma.unidade.update({ where: { id }, data })
+  } catch (error) {
+    if (isDuplicateUnitError(error)) return res.status(409).json({ error: duplicateUnitError })
+    throw error
+  }
   return res.json(unit)
 }))
 

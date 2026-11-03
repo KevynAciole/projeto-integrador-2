@@ -48,12 +48,14 @@ model Auditoria {
 
 model Unidade {
   id         String            @id @default(cuid())
-  numero     String            @unique
-  bloco      String?
+  numero     String
+  bloco      String            @default("")
   moradores  Usuario[]
   compras    Compra[]
   relatorios RelatorioMensal[]
   criadoEm   DateTime          @default(now())
+
+  @@unique([numero, bloco])
 }
 
 model ItemEstoque {

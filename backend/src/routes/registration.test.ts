@@ -1,5 +1,6 @@
 import express from 'express'
 import request from 'supertest'
+import { ZodError } from 'zod'
 import { prisma } from '../lib/prisma'
 import { sendTemporaryCredentials } from '../lib/mail'
 import { registrationRouter } from './registration'
@@ -21,6 +22,10 @@ jest.mock('../lib/mail', () => ({
 const app = express()
 app.use(express.json())
 app.use('/inscricao', registrationRouter)
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (error instanceof ZodError) return res.status(400).json({ error: 'Dados inválidos.' })
+  return res.status(500).json({ error: 'Erro interno do servidor.' })
+})
 const createUser = jest.fn()
 
 describe('autoinscrição pública', () => {
@@ -78,5 +83,19 @@ describe('autoinscrição pública', () => {
       numeroUsuario: '123456',
       senhaTemporaria: expect.any(String),
     }))
+  })
+
+  it.each([12, 15, 16])('rejeita telefone de %i dígitos sem criar usuário ou enviar credenciais', async (length) => {
+    const response = await request(app).post('/inscricao').send({
+      nome: 'Pessoa Exemplo',
+      email: 'pessoa@example.com',
+      telefone: '1'.repeat(length),
+      unidadeId: 'unit-1',
+    })
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe('Dados inválidos.')
+    expect(createUser).not.toHaveBeenCalled()
+    expect(sendTemporaryCredentials).not.toHaveBeenCalled()
   })
 })

@@ -152,9 +152,9 @@ export const createUserSchema = z.object({
   unidadeId: z.string().optional(),
 }).superRefine((data, context) => {
   if (data.perfil === Perfil.CONDOMINO) {
-    if (!data.telefone || data.telefone.length < 10 || data.telefone.length > 15) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone válido para o condômino.' })
+    if (!data.telefone || data.telefone.length < 10 || data.telefone.length > 11) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone fixo ou celular com DDD (10 ou 11 dígitos).' })
     if (!data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Condôminos devem estar vinculados a uma unidade.' })
   }
   if (data.perfil === Perfil.VISITANTE && data.unidadeId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['unidadeId'], message: 'Visitantes não podem ser vinculados a uma unidade.' })
-  if (data.telefone && (data.telefone.length < 10 || data.telefone.length > 15)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone com 10 a 15 dígitos.' })
+  if (data.telefone && (data.telefone.length < 10 || data.telefone.length > 11)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['telefone'], message: 'Informe um telefone fixo ou celular com DDD (10 ou 11 dígitos).' })
 })

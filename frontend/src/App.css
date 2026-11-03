@@ -275,6 +275,15 @@ kbd { padding: 2px 4px; border: 1px solid #e5e9e4; border-radius: 3px; color: #9
 .unit-delete-confirm { border: 1px solid #ad5347; color: #fff; background: #ad5347; }
 .unit-delete-confirm:hover:not(:disabled) { background: #923f35; }
 .unit-delete-confirm:disabled { cursor: not-allowed; opacity: .55; }
+.product-delete-modal { position: relative; display: grid; justify-items: center; gap: 11px; text-align: center; }
+.product-delete-close { position: absolute; top: 12px; right: 12px; }
+.product-delete-icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 50%; color: #a64e40; background: #fbefec; }
+.product-delete-modal h2 { margin: 0; color: #344a3a; font-size: 18px; }
+.product-delete-modal > p { max-width: 360px; margin: 0; color: #65756a; font-size: 11px; line-height: 1.6; }
+.product-delete-modal > p strong { color: #344a3a; }
+.product-delete-modal .modal-actions { width: 100%; justify-content: center; }
+.product-delete-confirm { border: 1px solid #ad5347; color: #fff; background: #ad5347; }
+.product-delete-confirm:hover:not(:disabled) { background: #923f35; }
 .purchase-success-modal { display: grid; justify-items: center; gap: 12px; text-align: center; }
 .purchase-success-icon { color: #246f4b; }
 .purchase-success-modal h2 { margin: 0; color: #344a3a; font-size: 19px; }

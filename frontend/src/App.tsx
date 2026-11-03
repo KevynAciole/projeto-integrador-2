@@ -27,7 +27,7 @@ function Protected({ roles, children }: { roles?: Role[]; children: React.ReactN
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (user.deveTrocarSenha && location.pathname !== '/alterar-senha') return <Navigate to="/alterar-senha" replace />
   if (!user.deveTrocarSenha && location.pathname === '/alterar-senha') return <Navigate to="/" replace />
-  if (roles && !roles.includes(user.perfil)) return <Navigate to={user.perfil === 'condomino' ? '/minhas-compras' : '/'} replace />
+  if (roles && !roles.includes(user.perfil)) return <Navigate to={user.perfil === 'condomino' ? '/minhas-compras' : user.perfil === 'estoquista' || user.perfil === 'visitante' ? '/estoque' : '/'} replace />
   return children
 }
 
